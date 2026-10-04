@@ -25,6 +25,7 @@
       stroke: num("stroke", NaN),
       opacity: num("opacity", NaN),
       color: $("color").value,
+      dash: $("dash").value,
       columns: parseInt($("columns").value, 10),
       rows: parseInt($("rows").value, 10),
       padding: num("padding", NaN),
@@ -54,6 +55,7 @@
     if (s.stroke !== undefined) $("stroke").value = s.stroke;
     if (s.opacity !== undefined) $("opacity").value = s.opacity;
     if (s.color) $("color").value = s.color;
+    if (s.dash !== undefined) $("dash").value = s.dash;
     if (s.columns !== undefined) $("columns").value = s.columns;
     if (s.rows !== undefined) $("rows").value = s.rows;
     if (s.padding !== undefined) $("padding").value = s.padding;
@@ -73,7 +75,7 @@
     try {
       window.localStorage.setItem(LAST_KEY, JSON.stringify({
         type: s.type, rings: s.rings, spacing: s.spacing,
-        stroke: s.stroke, opacity: s.opacity, color: s.color,
+        stroke: s.stroke, opacity: s.opacity, color: s.color, dash: s.dash,
         columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
         divisions: s.divisions, radius: s.radius, rotation: s.rotation,
         baseSize: s.baseSize, levels: s.levels,
@@ -142,7 +144,7 @@
   function watchPreview() {
     var ids = ["gridType", "rings", "spacing", "columns", "rows", "padding", "size",
       "divisions", "radius", "rotation", "base", "levels", "gwidth", "gheight",
-      "spacingV", "offX", "offY", "stroke", "opacity", "color",
+      "spacingV", "offX", "offY", "stroke", "opacity", "color", "dash",
       "lockGrid", "showCenter", "showBounds", "combine", "combineDiv"];
     ids.forEach(function (id) {
       var el = $(id);
@@ -248,7 +250,7 @@
     }
     var targets = (s.selectionMode === "perObject" ? sel.items : [window.LGG_Geometry.globalBounds(sel.items)])
       .map(toBounds);
-    var style = { stroke: s.stroke, opacity: s.opacity, color: s.color };
+    var style = { stroke: s.stroke, opacity: s.opacity, color: s.color, dash: window.LGG_Geometry.parseDash(s.dash || "").dashes };
     var options = { lock: false }; // lock applied once at the end (overlays must stay editable)
     var made = 0, kind = "shapes";
     for (var t = 0; t < targets.length; t++) {
@@ -397,7 +399,7 @@
     var s = readSettings();
     var r = window.LGG_Presets.save(presetStore(), name, {
       type: s.type, rings: s.rings, spacing: s.spacing,
-      stroke: s.stroke, opacity: s.opacity, color: s.color,
+      stroke: s.stroke, opacity: s.opacity, color: s.color, dash: s.dash,
       columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
       divisions: s.divisions, radius: s.radius, rotation: s.rotation,
       baseSize: s.baseSize, levels: s.levels,

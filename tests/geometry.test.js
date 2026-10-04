@@ -166,6 +166,28 @@ describe("combine", () => {
   });
 });
 
+describe("dash", () => {
+  it("empty means solid", () => {
+    assert.deepEqual(G.parseDash(""), { ok: true, dashes: [] });
+    assert.deepEqual(G.parseDash("   "), { ok: true, dashes: [] });
+  });
+  it("parses space-separated lengths", () => {
+    assert.deepEqual(G.parseDash("4 2"), { ok: true, dashes: [4, 2] });
+    assert.deepEqual(G.parseDash(" 6 "), { ok: true, dashes: [6] });
+  });
+  it("rejects negatives, garbage and long lists", () => {
+    assert.equal(G.parseDash("-1 2").ok, false);
+    assert.equal(G.parseDash("a b").ok, false);
+    assert.equal(G.parseDash("1 2 3 4 5 6 7").ok, false);
+  });
+  it("validateGrid accepts solid and dashed, rejects bad dash", () => {
+    const base = { type: "circular", rings: 6, spacing: 20, stroke: 1, opacity: 40, color: "#000000" };
+    assert.deepEqual(G.validateGrid({ ...base, dash: "" }), []);
+    assert.deepEqual(G.validateGrid({ ...base, dash: "4 2" }), []);
+    assert.ok(G.validateGrid({ ...base, dash: "x" }).length > 0);
+  });
+});
+
 describe("validation", () => {
   it("rejects Rings=-5", () => {
     const errs = G.validateCircular({ rings: -5, spacing: 20, stroke: 1, opacity: 40, color: "#000000" });

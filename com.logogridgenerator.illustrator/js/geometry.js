@@ -217,10 +217,30 @@
 
   function isNum(x) { return typeof x === "number" && isFinite(x); }
 
+  // Dash pattern: space-separated lengths, e.g. "4 2". Empty = solid line.
+  function parseDash(str) {
+    if (str === undefined || str === null || String(str).trim() === "") {
+      return { ok: true, dashes: [] };
+    }
+    var parts = String(str).trim().split(/\s+/);
+    if (parts.length > 6) return { ok: false, error: "At most 6 dash values." };
+    var out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var v = parseFloat(parts[i]);
+      if (!isFinite(v) || v < 0) return { ok: false, error: "Dash values must be numbers >= 0." };
+      out.push(v);
+    }
+    return { ok: true, dashes: out };
+  }
+
   function validateStyle(s, errs) {
     if (!isNum(s.stroke) || s.stroke < 0) errs.push("Stroke must be >= 0.");
     if (!isNum(s.opacity) || s.opacity < 0 || s.opacity > 100) errs.push("Opacity must be 0–100.");
     if (!s.color || !/^#[0-9a-fA-F]{6}$/.test(s.color)) errs.push("Color must be #RRGGBB.");
+    if (s.dash !== undefined && s.dash !== null && String(s.dash).trim() !== "") {
+      var pd = parseDash(s.dash);
+      if (!pd.ok) errs.push("Dash: " + pd.error + ' (e.g. "4 2", empty = solid).');
+    }
   }
 
   function validateCircular(s) {
@@ -321,6 +341,7 @@
     modularRects: modularRects,
     squareRects: squareRects,
     centerMarker: centerMarker,
+    parseDash: parseDash,
     goldenRects: goldenRects,
     goldenAutoBase: goldenAutoBase,
     customPolygons: customPolygons,

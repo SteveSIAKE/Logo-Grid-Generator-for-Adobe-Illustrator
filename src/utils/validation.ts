@@ -2,6 +2,7 @@ export interface GridStyle {
     stroke: number;
     opacity: number; // 0-100
     color: string; // #RRGGBB
+    dash?: string; // space-separated lengths, e.g. "4 2"; empty = solid
 }
 
 export type GridType = "circular" | "modular" | "square" | "radial" | "golden" | "custom";
@@ -48,6 +49,26 @@ function validateStyle(s: GridStyle, errs: string[]): void {
     if (!isNum(s.stroke) || s.stroke < 0) errs.push("Stroke must be >= 0.");
     if (!isNum(s.opacity) || s.opacity < 0 || s.opacity > 100) errs.push("Opacity must be 0–100.");
     if (!s.color || !/^#[0-9a-fA-F]{6}$/.test(s.color)) errs.push("Color must be #RRGGBB.");
+    if (s.dash !== undefined && s.dash !== null && String(s.dash).trim() !== "") {
+        const pd = parseDash(s.dash);
+        if (!pd.ok) errs.push(`Dash: ${pd.error} (e.g. "4 2", empty = solid).`);
+    }
+}
+
+/** Space-separated dash lengths, e.g. "4 2". Empty = solid line. */
+export function parseDash(str: string): { ok: boolean; dashes?: number[]; error?: string } {
+    if (str === undefined || str === null || String(str).trim() === "") {
+        return { ok: true, dashes: [] };
+    }
+    const parts = String(str).trim().split(/\s+/);
+    if (parts.length > 6) return { ok: false, error: "At most 6 dash values." };
+    const out: number[] = [];
+    for (const p of parts) {
+        const v = parseFloat(p);
+        if (!isFinite(v) || v < 0) return { ok: false, error: "Dash values must be numbers >= 0." };
+        out.push(v);
+    }
+    return { ok: true, dashes: out };
 }
 
 /** Validate before any host call. Returns a list of human-readable errors. */

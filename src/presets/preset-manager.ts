@@ -21,6 +21,7 @@ export const DEFAULTS: GridSettings = {
     stroke: 1,
     opacity: 40,
     color: "#000000",
+    dash: "",
     columns: 4,
     rows: 4,
     padding: 20,

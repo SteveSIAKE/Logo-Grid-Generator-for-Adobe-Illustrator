@@ -83,6 +83,9 @@ function lgg_applyStyle(item, style) {
     item.strokeWidth = strokeW;
     item.strokeColor = lgg_hexToRGBColor(colorHex);
     item.opacity = opacity;
+    if (style && style.dash && style.dash.length) {
+        try { item.strokeDashes = style.dash; } catch (eD) { /* dash unsupported -> solid */ }
+    }
 }
 
 // Shared prelude: checks + layer + fresh group. Returns { doc, layer, group }

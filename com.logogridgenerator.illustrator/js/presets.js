@@ -9,7 +9,7 @@
 
   var DEFAULTS = {
     type: "circular",
-    rings: 6, spacing: 20, stroke: 1, opacity: 40, color: "#000000",
+    rings: 6, spacing: 20, stroke: 1, opacity: 40, color: "#000000", dash: "",
     columns: 4, rows: 4, padding: 20, size: 40,
     divisions: 12, radius: 0, rotation: 0,
     baseSize: 0, levels: 5,
