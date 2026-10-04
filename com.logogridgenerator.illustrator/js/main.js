@@ -109,6 +109,7 @@
     } catch (e) { /* corrupt -> keep defaults */ }
   }
   function setBusy(b) {
+    busy = b;
     $("btnGenerate").disabled = b;
     $("btnRegenerate").disabled = b;
     $("btnClear").disabled = b;
@@ -120,17 +121,19 @@
   }
 
   // Live preview: debounced auto-regenerate (README §27: 100–200 ms).
+  // Never overlaps a running operation: if busy, the preview re-arms itself.
+  var busy = false;
   var previewTimer = null;
   function schedulePreview() {
     if (!$("preview").checked) return;
     if (previewTimer) clearTimeout(previewTimer);
     previewTimer = setTimeout(function () {
       previewTimer = null;
+      if (busy) { schedulePreview(); return; }
       autoPreview();
     }, 180);
   }
   async function autoPreview() {
-    if (previewTimer) return; // superseded
     var s = readSettings();
     if (window.LGG_Geometry.validateGrid(s).length) return; // invalid → stay silent
     setBusy(true);

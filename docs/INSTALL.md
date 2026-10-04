@@ -5,6 +5,25 @@
 > `js/host-comm.js` + `jsx/host.jsx` sera à réécrire (logique déjà isolée).
 >
 > Testé sur : **Illustrator 2026 (v30.7) + CEP 12**, Windows.
+>
+> ## 0. État de la v1.0
+>
+> Fonctionnel : 6 grilles (Circular, Modular, Square, Radial, Golden Ratio,
+> Custom), combinaison radiale, presets + import/export JSON, preview live,
+> persistance, unités (px/pt/mm/cm/in), lock / hide / guides, Clear/Regenerate,
+> undo en une étape, 43+ tests Node + `tsc` strict.
+>
+> Limitations connues :
+>
+> - Distribution non signée : le packaging produit une archive dev ;
+>   la production exige un certificat + `ZXPSignCmd` (§2).
+> - `js/CSInterface.js` est un shim de dev : remplacer par le fichier officiel
+>   du SDK CEP avant signature.
+> - Bounds = boîte englobante alignée aux axes (`geometricBounds`) : un logo
+>   pivoté donne le AABB, pas la boîte orientée (choix documenté, §74 du spec).
+> - `MAKE ARTWORK` après `MAKE GUIDES` dépend du support `guides=false`
+>   d'Illustrator : si la reconversion échoue, régénérer la grille.
+> - macOS non testé (chemins fournis par analogie).
 
 ## 1. Installation développeur (non signée)
 
