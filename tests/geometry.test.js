@@ -225,4 +225,27 @@ describe("units", () => {
     const pt = G.toPoints(10, "mm");
     assert.ok(Math.abs(pt - 28.3465) < 0.01);
   });
+  it("convertToPoints scales lengths, keeps unitless keys and auto-zeros", () => {
+    const s = {
+      type: "circular", unit: "in",
+      rings: 6, spacing: 1, stroke: 2, opacity: 40, color: "#000000",
+      radius: 0, rotation: 45, combineDiv: 12,
+    };
+    const g = G.convertToPoints(s);
+    assert.equal(g.spacing, 72);
+    assert.equal(g.radius, 0); // auto preserved
+    assert.equal(g.rings, 6);
+    assert.equal(g.rotation, 45);
+    assert.equal(g.stroke, 2); // stroke stays in pt
+    assert.equal(g.unit, "in");
+  });
+  it("convertToPoints defaults to px and throws on unknown unit", () => {
+    const g = G.convertToPoints({ spacing: 5 });
+    assert.equal(g.spacing, 5);
+    assert.throws(() => G.convertToPoints({ spacing: 5, unit: "furlong" }), /Unsupported unit/);
+  });
+  it("validateGrid rejects unknown unit", () => {
+    const base = { type: "circular", rings: 6, spacing: 20, stroke: 1, opacity: 40, color: "#000000", unit: "furlong" };
+    assert.ok(G.validateGrid(base).length > 0);
+  });
 });

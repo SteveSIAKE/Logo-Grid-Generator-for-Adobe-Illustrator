@@ -215,6 +215,22 @@
     return value * f;
   }
 
+  // Linear settings keys converted to points. Unitless keys
+  // (rings, levels, divisions, columns, rows, rotation) are untouched.
+  // Stroke/dash stay in points by convention (Illustrator stroke unit).
+  var LINEAR_KEYS = ["spacing", "padding", "size", "radius", "baseSize",
+    "gridW", "gridH", "spacingV", "offsetX", "offsetY"];
+  function convertToPoints(s) {
+    var f = toPoints(1, (s && s.unit) || "px"); // throws on unknown unit
+    var out = {}, k;
+    for (k in s) out[k] = s[k];
+    for (var i = 0; i < LINEAR_KEYS.length; i++) {
+      k = LINEAR_KEYS[i];
+      if (isNum(out[k])) out[k] = out[k] * f;
+    }
+    return out;
+  }
+
   function isNum(x) { return typeof x === "number" && isFinite(x); }
 
   // Dash pattern: space-separated lengths, e.g. "4 2". Empty = solid line.
@@ -289,6 +305,11 @@
 
   function validateGrid(s) {
     var errs;
+    if (s && s.unit !== undefined && s.unit !== null && UNIT_TO_PT[s.unit] === undefined) {
+      errs = ["Unknown unit (px, pt, mm, cm, in)."];
+      validateStyle(s, errs);
+      return errs;
+    }
     switch ((s && s.type) || "circular") {
       case "modular": errs = validateModular(s); break;
       case "square": errs = validateSquare(s); break;
@@ -342,6 +363,7 @@
     squareRects: squareRects,
     centerMarker: centerMarker,
     parseDash: parseDash,
+    convertToPoints: convertToPoints,
     goldenRects: goldenRects,
     goldenAutoBase: goldenAutoBase,
     customPolygons: customPolygons,

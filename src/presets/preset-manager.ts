@@ -16,6 +16,7 @@ export const STORE_KEY = "lgg.presets.v1";
 
 export const DEFAULTS: GridSettings = {
     type: "circular",
+    unit: "px",
     rings: 6,
     spacing: 20,
     stroke: 1,

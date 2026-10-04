@@ -1,3 +1,5 @@
+import { Unit, isKnownUnit } from "../geometry/units";
+
 export interface GridStyle {
     stroke: number;
     opacity: number; // 0-100
@@ -15,6 +17,7 @@ export interface CircularSettings extends GridStyle {
 /** Canonical flat settings covering all grid types (shared `spacing`). */
 export interface GridSettings extends GridStyle {
     type: GridType;
+    unit: Unit;
     rings: number;
     spacing: number;
     columns: number;
@@ -119,6 +122,11 @@ export function validateRadial(s: GridSettings): string[] {
 /** Dispatch validation by grid type (unknown type → circular). */
 export function validateGrid(s: GridSettings): string[] {
     let errs: string[];
+    if (s && (s.unit === undefined || s.unit === null || !isKnownUnit(s.unit))) {
+        errs = ["Unknown unit (px, pt, mm, cm, in)."];
+        validateStyle(s, errs);
+        return errs;
+    }
     switch ((s && s.type) || "circular") {
         case "modular":
             errs = validateModular(s);

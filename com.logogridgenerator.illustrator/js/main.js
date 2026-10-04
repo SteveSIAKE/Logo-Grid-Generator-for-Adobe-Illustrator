@@ -20,6 +20,7 @@
     for (var i = 0; i < radios.length; i++) { if (radios[i].checked) selMode = radios[i].value; }
     return {
       type: $("gridType").value,
+      unit: $("units").value,
       rings: parseInt($("rings").value, 10),
       spacing: num("spacing", NaN),
       stroke: num("stroke", NaN),
@@ -50,6 +51,7 @@
   }
   function applySettings(s) {
     if (s.type) { $("gridType").value = s.type; updateParamVisibility(); }
+    if (s.unit) { $("units").value = s.unit; updateUnitLabels(); }
     if (s.rings !== undefined) $("rings").value = s.rings;
     if (s.spacing !== undefined) $("spacing").value = s.spacing;
     if (s.stroke !== undefined) $("stroke").value = s.stroke;
@@ -74,7 +76,7 @@
   function persistLast(s) {
     try {
       window.localStorage.setItem(LAST_KEY, JSON.stringify({
-        type: s.type, rings: s.rings, spacing: s.spacing,
+        type: s.type, unit: s.unit, rings: s.rings, spacing: s.spacing,
         stroke: s.stroke, opacity: s.opacity, color: s.color, dash: s.dash,
         columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
         divisions: s.divisions, radius: s.radius, rotation: s.rotation,
@@ -142,7 +144,7 @@
     } finally { setBusy(false); }
   }
   function watchPreview() {
-    var ids = ["gridType", "rings", "spacing", "columns", "rows", "padding", "size",
+    var ids = ["gridType", "units", "rings", "spacing", "columns", "rows", "padding", "size",
       "divisions", "radius", "rotation", "base", "levels", "gwidth", "gheight",
       "spacingV", "offX", "offY", "stroke", "opacity", "color", "dash",
       "lockGrid", "showCenter", "showBounds", "combine", "combineDiv"];
@@ -168,6 +170,20 @@
     $("params-golden").style.display = (t === "golden") ? "" : "none";
     $("params-custom").style.display = (t === "custom") ? "" : "none";
     $("row-combine").style.display = (t === "radial") ? "none" : "";
+  }
+
+  // Length inputs (all but stroke/rotation) follow the selected unit.
+  var LEN_IDS = ["spacing", "padding", "size", "radius", "gwidth", "gheight",
+    "spacingV", "offX", "offY", "base"];
+  function updateUnitLabels() {
+    var u = $("units").value;
+    LEN_IDS.forEach(function (id) {
+      var el = $(id);
+      if (el && el.parentNode) {
+        var sp = el.parentNode.querySelector(".lgg-unit");
+        if (sp) sp.textContent = u;
+      }
+    });
   }
 
   function toBounds(b) {
@@ -250,19 +266,20 @@
     }
     var targets = (s.selectionMode === "perObject" ? sel.items : [window.LGG_Geometry.globalBounds(sel.items)])
       .map(toBounds);
+    var g = window.LGG_Geometry.convertToPoints(s); // lengths -> Illustrator points
     var style = { stroke: s.stroke, opacity: s.opacity, color: s.color, dash: window.LGG_Geometry.parseDash(s.dash || "").dashes };
     var options = { lock: false }; // lock applied once at the end (overlays must stay editable)
     var made = 0, kind = "shapes";
     for (var t = 0; t < targets.length; t++) {
-      var r = await drawMain(s, targets[t], style, options);
+      var r = await drawMain(g, targets[t], style, options);
       if (!r.ok) return r;
       made += r.made;
       kind = r.kind;
-      var ov = await drawOverlays(s, targets[t], style, options);
+      var ov = await drawOverlays(g, targets[t], style, options);
       if (!ov.ok) return ov;
-      if (s.combine && s.type !== "radial") {
-        var R = window.LGG_Geometry.overlayRadius(s, targets[t]);
-        var combo = window.LGG_Geometry.radialLines(targets[t].centerX, targets[t].centerY, R, s.combineDiv, 0);
+      if (g.combine && g.type !== "radial") {
+        var R = window.LGG_Geometry.overlayRadius(g, targets[t]);
+        var combo = window.LGG_Geometry.radialLines(targets[t].centerX, targets[t].centerY, R, g.combineDiv, 0);
         var rc2 = await window.LGG_Host.call("lgg_drawLines", [combo.lines, style, options]);
         if (!rc2.ok) return { ok: false, error: "Illustrator error: " + (rc2.detail || rc2.error) };
         made += rc2.created;
@@ -272,8 +289,7 @@
       var lk = await window.LGG_Host.call("lgg_setGridLocked", [true]);
       if (!lk.ok) return { ok: false, error: "Illustrator error: " + (lk.detail || lk.error) };
     }
-    return { ok: true, made: made, kind: kind };
-  }
+    return { ok: true, made: made, kind: kind };  }
 
   async function onGenerate() {
     setStatus("");
@@ -398,7 +414,7 @@
     var name = $("presetName").value;
     var s = readSettings();
     var r = window.LGG_Presets.save(presetStore(), name, {
-      type: s.type, rings: s.rings, spacing: s.spacing,
+      type: s.type, unit: s.unit, rings: s.rings, spacing: s.spacing,
       stroke: s.stroke, opacity: s.opacity, color: s.color, dash: s.dash,
       columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
       divisions: s.divisions, radius: s.radius, rotation: s.rotation,
@@ -463,8 +479,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     restoreLast();
     updateParamVisibility();
+    updateUnitLabels();
     refreshPresetList();
     watchPreview();
+    $("units").addEventListener("change", updateUnitLabels);
     $("gridType").addEventListener("change", updateParamVisibility);
     $("btnGenerate").addEventListener("click", onGenerate);
     $("btnRegenerate").addEventListener("click", onRegenerate);

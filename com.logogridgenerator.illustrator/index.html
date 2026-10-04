@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Logo Grid Generator</title>
-<link rel="stylesheet" href="./styles.css?v=0.6.0" />
+<link rel="stylesheet" href="./styles.css?v=0.7.0" />
 <script>
 /* Boot guard: runs before everything, needs no other file.
  * Any script load/parse error lands here as a VISIBLE banner
@@ -34,7 +34,7 @@ setTimeout(function () {
 <body>
   <div id="boot-error" style="display:none;background:#7a1f1f;color:#fff;padding:8px 12px;font-size:11px;"></div>
   <header class="lgg-header">
-    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.6.0</span></h1>
+    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.7.0</span></h1>
   </header>
 
   <main class="lgg-main">
@@ -52,6 +52,16 @@ setTimeout(function () {
 
     <section class="lgg-section">
       <h2>PARAMETERS</h2>
+      <div class="lgg-row">
+        <label for="units">Units</label>
+        <select id="units" class="lgg-input" title="Length unit (stroke stays in pt)">
+          <option value="px" selected>px</option>
+          <option value="pt">pt</option>
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </select>
+      </div>
       <div id="params-circular">
         <div class="lgg-row">
           <label for="rings">Rings</label>
@@ -213,9 +223,9 @@ setTimeout(function () {
 
   <!-- Official Adobe CSInterface.js must replace js/CSInterface.js from the CEP SDK. -->
   <script src="./js/CSInterface.js"></script>
-  <script src="./js/geometry.js?v=0.6.0"></script>
-  <script src="./js/presets.js?v=0.6.0"></script>
-  <script src="./js/host-comm.js?v=0.6.0"></script>
-  <script src="./js/main.js?v=0.6.0"></script>
+  <script src="./js/geometry.js?v=0.7.0"></script>
+  <script src="./js/presets.js?v=0.7.0"></script>
+  <script src="./js/host-comm.js?v=0.7.0"></script>
+  <script src="./js/main.js?v=0.7.0"></script>
 </body>
 </html>
