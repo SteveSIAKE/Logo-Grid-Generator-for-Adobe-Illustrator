@@ -1,6 +1,7 @@
 /* Panel controller: UI -> validation -> geometry -> host. No math in handlers. */
 (function () {
   "use strict";
+  window.__lggBoot = true; // boot guard in index.html: panel scripts are running
   var LAST_KEY = "lgg.last.v1";
 
   function $(id) { return document.getElementById(id); }

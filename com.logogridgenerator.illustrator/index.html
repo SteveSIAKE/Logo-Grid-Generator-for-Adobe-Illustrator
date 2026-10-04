@@ -4,11 +4,37 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Logo Grid Generator</title>
-<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./styles.css?v=0.3.1" />
+<script>
+/* Boot guard: runs before everything, needs no other file.
+ * Any script load/parse error lands here as a VISIBLE banner
+ * (a silent blank panel is the worst failure mode in CEP). */
+window.__lggBoot = false;
+window.__lggErrors = [];
+function __lggShowBootError(m) {
+  window.__lggErrors.push(m);
+  var el = document.getElementById("boot-error");
+  if (el) {
+    el.style.display = "block";
+    el.textContent = "Load error: " + window.__lggErrors.join(" | ");
+  }
+}
+window.addEventListener("error", function (e) {
+  var msg = (e && e.message) || "Script error";
+  var src = (e && e.filename) ? " (" + String(e.filename).split("/").pop() + ":" + (e.lineno || "?") + ")" : "";
+  __lggShowBootError(msg + src);
+}, true);
+setTimeout(function () {
+  if (!window.__lggBoot) {
+    __lggShowBootError("Panel scripts did not start (stale CEP cache or missing js/ files?). Clear the CEP cache, keep a single extension copy, and restart Illustrator. See docs/INSTALL.md.");
+  }
+}, 3000);
+</script>
 </head>
 <body>
+  <div id="boot-error" style="display:none;background:#7a1f1f;color:#fff;padding:8px 12px;font-size:11px;"></div>
   <header class="lgg-header">
-    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.3.0</span></h1>
+    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.3.1</span></h1>
   </header>
 
   <main class="lgg-main">
@@ -181,9 +207,9 @@
 
   <!-- Official Adobe CSInterface.js must replace js/CSInterface.js from the CEP SDK. -->
   <script src="./js/CSInterface.js"></script>
-  <script src="./js/geometry.js"></script>
-  <script src="./js/presets.js"></script>
-  <script src="./js/host-comm.js"></script>
-  <script src="./js/main.js"></script>
+  <script src="./js/geometry.js?v=0.3.1"></script>
+  <script src="./js/presets.js?v=0.3.1"></script>
+  <script src="./js/host-comm.js?v=0.3.1"></script>
+  <script src="./js/main.js?v=0.3.1"></script>
 </body>
 </html>

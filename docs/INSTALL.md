@@ -62,7 +62,31 @@ ZXPSignCmd -sign <dossier> <archive.zxp> <cert.p12> <motdepasse> -tsa http://tim
 | Panneau absent du menu           | `PlayerDebugMode` non activé / mauvais dossier / Illustrator < 2024 |
 | `Please select a logo…`          | Aucun objet vectoriel sélectionné           |
 | `The document or target… locked` | Calque `LOGO GRID` verrouillé (option Lock) → Clear le déverrouille |
-| Panneau vide                     | `CSXS/manifest.xml` invalide → valider le XML |
+| Panneau vide, sans message       | Voir §3.1 ci-dessous (cache, doublon, fichiers) |
+| Bannière rouge `Load error: …`   | Le message indique le fichier en cause → §3.1 |
+
+### 3.1 Panneau vide (l'onglet s'affiche, contenu gris)
+
+Le panneau v0.3.1+ affiche une **bannière rouge** en cas d'erreur JS.
+S'il reste totalement vide, le HTML ne charge pas du tout. Vérifier
+dans l'ordre :
+
+1. **Doublon d'installation** — une seule copie doit exister. Lister les
+   deux emplacements et supprimer l'ancien :
+   - `%APPDATA%\Adobe\CEP\extensions\`
+   - `C:\Program Files (x86)\Common Files\Adobe\CEP\extensions\`
+   - (macOS : `~/Library/...` et `/Library/...`)
+2. **Structure** — le dossier installé doit contenir à sa racine
+   `index.html`, `styles.css`, `CSXS/`, `js/`, `jsx/`.
+3. **Cache CEP** — Illustrator fermé, supprimer le cache du moteur web :
+   - Windows : `%TEMP%\CEPHtmlEngineCache` (et tout dossier `CSXS*` du temp)
+   - macOS : `~/Library/Caches/Adobe/CEP/`
+   puis rouvrir Illustrator. Les `?v=0.3.1` sur les scripts forcent
+   déjà le rechargement à chaque montée de version.
+4. **Debug distant** — avec Illustrator ouvert, ouvrir
+   `http://localhost:9222` dans Chrome (port déclaré dans `.debug`) :
+   la page du panneau doit être listée, la console indique l'erreur exacte.
+5. **Logs CEP** — `CEPHtmlEngine*.log` dans le dossier temp système.
 
 ## 4. Vérification rapide (sans Illustrator)
 
