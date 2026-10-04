@@ -1,11 +1,17 @@
 /* Panel controller: UI -> validation -> geometry -> host. No math in handlers. */
 (function () {
   "use strict";
+  var LAST_KEY = "lgg.last.v1";
+
   function $(id) { return document.getElementById(id); }
   function setStatus(msg, kind) {
     var el = $("status");
     el.textContent = msg || "";
     el.className = "lgg-status" + (kind ? " " + kind : "");
+  }
+  function num(id, fallback) {
+    var v = parseFloat($(id).value);
+    return isFinite(v) ? v : fallback;
   }
   function readSettings() {
     var selMode = "global";
@@ -14,44 +20,197 @@
     return {
       type: $("gridType").value,
       rings: parseInt($("rings").value, 10),
-      spacing: parseFloat($("spacing").value),
-      stroke: parseFloat($("stroke").value),
-      opacity: parseFloat($("opacity").value),
+      spacing: num("spacing", NaN),
+      stroke: num("stroke", NaN),
+      opacity: num("opacity", NaN),
       color: $("color").value,
-      selectionMode: selMode
+      columns: parseInt($("columns").value, 10),
+      rows: parseInt($("rows").value, 10),
+      padding: num("padding", NaN),
+      size: num("size", NaN),
+      divisions: parseInt($("divisions").value, 10),
+      radius: num("radius", NaN),
+      rotation: num("rotation", 0),
+      selectionMode: selMode,
+      lock: $("lockGrid").checked,
+      showCenter: $("showCenter").checked,
+      showBounds: $("showBounds").checked
     };
+  }
+  function applySettings(s) {
+    if (s.type) { $("gridType").value = s.type; updateParamVisibility(); }
+    if (s.rings !== undefined) $("rings").value = s.rings;
+    if (s.spacing !== undefined) $("spacing").value = s.spacing;
+    if (s.stroke !== undefined) $("stroke").value = s.stroke;
+    if (s.opacity !== undefined) $("opacity").value = s.opacity;
+    if (s.color) $("color").value = s.color;
+    if (s.columns !== undefined) $("columns").value = s.columns;
+    if (s.rows !== undefined) $("rows").value = s.rows;
+    if (s.padding !== undefined) $("padding").value = s.padding;
+    if (s.size !== undefined) $("size").value = s.size;
+    if (s.divisions !== undefined) $("divisions").value = s.divisions;
+    if (s.radius !== undefined) $("radius").value = s.radius;
+    if (s.rotation !== undefined) $("rotation").value = s.rotation;
+  }
+  function persistLast(s) {
+    try {
+      window.localStorage.setItem(LAST_KEY, JSON.stringify({
+        type: s.type, rings: s.rings, spacing: s.spacing,
+        stroke: s.stroke, opacity: s.opacity, color: s.color,
+        columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
+        divisions: s.divisions, radius: s.radius, rotation: s.rotation,
+        selectionMode: s.selectionMode, lock: s.lock,
+        showCenter: s.showCenter, showBounds: s.showBounds
+      }));
+    } catch (e) { /* private mode etc. — persistence is best-effort */ }
+  }
+  function restoreLast() {
+    try {
+      var raw = window.localStorage.getItem(LAST_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      applySettings(s);
+      if (s.selectionMode) {
+        var radios = document.getElementsByName("selMode");
+        for (var i = 0; i < radios.length; i++) radios[i].checked = (radios[i].value === s.selectionMode);
+      }
+      if (s.lock !== undefined) $("lockGrid").checked = !!s.lock;
+      if (s.showCenter !== undefined) $("showCenter").checked = !!s.showCenter;
+      if (s.showBounds !== undefined) $("showBounds").checked = !!s.showBounds;
+    } catch (e) { /* corrupt -> keep defaults */ }
   }
   function setBusy(b) {
     $("btnGenerate").disabled = b;
+    $("btnRegenerate").disabled = b;
     $("btnClear").disabled = b;
+  }
+  function presetStore() {
+    return window.LGG_Presets.localStorageStore();
+  }
+  function updateParamVisibility() {
+    var t = $("gridType").value;
+    $("params-circular").style.display = (t === "circular") ? "" : "none";
+    $("row-spacing").style.display = (t === "radial") ? "none" : "";
+    $("params-grid").style.display = (t === "modular" || t === "square") ? "" : "none";
+    $("params-modular").style.display = (t === "modular") ? "" : "none";
+    $("params-square").style.display = (t === "square") ? "" : "none";
+    $("params-radial").style.display = (t === "radial") ? "" : "none";
+  }
+
+  function toBounds(b) {
+    return (b.centerX === undefined)
+      ? window.LGG_Geometry.makeBounds(b.left, b.top, b.width, b.height) : b;
+  }
+
+  // Draw the main grid for one target bounds. Returns { ok, made, error, kind }.
+  async function drawMain(s, bounds, style, options) {
+    var cx = bounds.centerX, cy = bounds.centerY;
+    if (s.type === "modular") {
+      var m = window.LGG_Geometry.modularRects(bounds, s.columns, s.rows, s.spacing, s.padding);
+      var rm = await window.LGG_Host.call("lgg_drawRects", [m.rects, style, options]);
+      if (!rm.ok) return { ok: false, error: "Illustrator error: " + (rm.detail || rm.error) };
+      return { ok: true, made: rm.created, kind: "cells" };
+    }
+    if (s.type === "square") {
+      var q = window.LGG_Geometry.squareRects(cx, cy, s.size, s.columns, s.rows, s.spacing);
+      var rq = await window.LGG_Host.call("lgg_drawRects", [q.rects, style, options]);
+      if (!rq.ok) return { ok: false, error: "Illustrator error: " + (rq.detail || rq.error) };
+      return { ok: true, made: rq.created, kind: "cells" };
+    }
+    if (s.type === "radial") {
+      var radius = s.radius > 0 ? s.radius : window.LGG_Geometry.baseRadius(bounds);
+      var rl = window.LGG_Geometry.radialLines(cx, cy, radius, s.divisions, s.rotation);
+      var rr = await window.LGG_Host.call("lgg_drawLines", [rl.lines, style, options]);
+      if (!rr.ok) return { ok: false, error: "Illustrator error: " + (rr.detail || rr.error) };
+      return { ok: true, made: rr.created, kind: "lines" };
+    }
+    var circ = window.LGG_Geometry.circularRadii(bounds, s.rings, s.spacing);
+    var rc = await window.LGG_Host.call("lgg_drawCircles", [cx, cy, circ.radii, style, options]);
+    if (!rc.ok) return { ok: false, error: "Illustrator error: " + (rc.detail || rc.error) };
+    return { ok: true, made: rc.created, kind: "circles" };
+  }
+
+  // Optional overlays: center marker + bounding box. Returns { ok, error }.
+  async function drawOverlays(s, bounds, style, options) {
+    if (s.showCenter) {
+      var base = window.LGG_Geometry.baseRadius(bounds);
+      var half = Math.max(12, base * 0.2);
+      var marker = window.LGG_Geometry.centerMarker(bounds.centerX, bounds.centerY, half);
+      var rl = await window.LGG_Host.call("lgg_drawLines", [marker.lines, style, options]);
+      if (!rl.ok) return { ok: false, error: "Illustrator error: " + (rl.detail || rl.error) };
+      var rd = await window.LGG_Host.call("lgg_drawCircles", [bounds.centerX, bounds.centerY, [marker.dotRadius], style, options]);
+      if (!rd.ok) return { ok: false, error: "Illustrator error: " + (rd.detail || rd.error) };
+    }
+    if (s.showBounds) {
+      var rb = await window.LGG_Host.call("lgg_drawRects", [[{
+        left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height
+      }], style, options]);
+      if (!rb.ok) return { ok: false, error: "Illustrator error: " + (rb.detail || rb.error) };
+    }
+    return { ok: true };
+  }
+
+  // Core generation, shared by Generate and Regenerate. Returns { ok, made, kind, error }.
+  async function doGenerate(s) {
+    var doc = await window.LGG_Host.call("lgg_hasDocument", []);
+    if (!doc.ok || !doc.hasDocument) {
+      return { ok: false, error: "No Illustrator document is open. Please open a document first." };
+    }
+    var sel = await window.LGG_Host.call("lgg_getSelectionInfo", []);
+    if (!sel.ok) return { ok: false, error: sel.error === "NO_HOST" ? sel.detail : "Host error: " + sel.error };
+    if (!sel.items || sel.items.length === 0) {
+      return { ok: false, error: "Please select a logo or object first." };
+    }
+    var targets = (s.selectionMode === "perObject" ? sel.items : [window.LGG_Geometry.globalBounds(sel.items)])
+      .map(toBounds);
+    var style = { stroke: s.stroke, opacity: s.opacity, color: s.color };
+    var options = { lock: false }; // lock applied once at the end (overlays must stay editable)
+    var made = 0, kind = "shapes";
+    for (var t = 0; t < targets.length; t++) {
+      var r = await drawMain(s, targets[t], style, options);
+      if (!r.ok) return r;
+      made += r.made;
+      kind = r.kind;
+      var ov = await drawOverlays(s, targets[t], style, options);
+      if (!ov.ok) return ov;
+    }
+    if (s.lock) {
+      var lk = await window.LGG_Host.call("lgg_setGridLocked", [true]);
+      if (!lk.ok) return { ok: false, error: "Illustrator error: " + (lk.detail || lk.error) };
+    }
+    return { ok: true, made: made, kind: kind };
   }
 
   async function onGenerate() {
     setStatus("");
     var s = readSettings();
-    var errs = window.LGG_Geometry.validateCircular(s);
+    var errs = window.LGG_Geometry.validateGrid(s);
     if (errs.length) { setStatus(errs.join(" "), "error"); return; }
     setBusy(true);
     try {
-      var doc = await window.LGG_Host.call("lgg_hasDocument", []);
-      if (!doc.ok || !doc.hasDocument) { setStatus("No Illustrator document is open. Please open a document first.", "error"); return; }
-      var sel = await window.LGG_Host.call("lgg_getSelectionInfo", []);
-      if (!sel.ok) { setStatus(sel.error === "NO_HOST" ? sel.detail : "Host error: " + sel.error, "error"); return; }
-      if (!sel.items || sel.items.length === 0) { setStatus("Please select a logo or object first.", "error"); return; }
+      var r = await doGenerate(s);
+      if (!r.ok) { setStatus(r.error, "error"); return; }
+      persistLast(s);
+      setStatus("Grid created: " + r.made + " " + r.kind + ".", "ok");
+    } finally { setBusy(false); }
+  }
 
-      var targets = s.selectionMode === "perObject" ? sel.items : [window.LGG_Geometry.globalBounds(sel.items)];
-      var style = { stroke: s.stroke, opacity: s.opacity, color: s.color };
-      var made = 0;
-      for (var t = 0; t < targets.length; t++) {
-        var b = targets[t];
-        var bounds = (b.centerX === undefined)
-          ? window.LGG_Geometry.makeBounds(b.left, b.top, b.width, b.height) : b;
-        var circ = window.LGG_Geometry.circularRadii(bounds, s.rings, s.spacing);
-        var res = await window.LGG_Host.call("lgg_drawCircles", [bounds.centerX, bounds.centerY, circ.radii, style]);
-        if (!res.ok) { setStatus("Illustrator error: " + (res.detail || res.error), "error"); return; }
-        made += circ.radii.length;
+  async function onRegenerate() {
+    setStatus("");
+    var s = readSettings();
+    var errs = window.LGG_Geometry.validateGrid(s);
+    if (errs.length) { setStatus(errs.join(" "), "error"); return; }
+    setBusy(true);
+    try {
+      var cleared = await window.LGG_Host.call("lgg_clearGrid", []);
+      if (!cleared.ok) {
+        setStatus(cleared.error === "NO_HOST" ? cleared.detail : "Illustrator error: " + (cleared.detail || cleared.error), "error");
+        return;
       }
-      setStatus("Grid created: " + made + " circle(s).", "ok");
+      var r = await doGenerate(s);
+      if (!r.ok) { setStatus(r.error, "error"); return; }
+      persistLast(s);
+      setStatus("Grid regenerated: " + r.made + " " + r.kind + ".", "ok");
     } finally { setBusy(false); }
   }
 
@@ -65,9 +224,61 @@
     } finally { setBusy(false); }
   }
 
+  function refreshPresetList(selectName) {
+    var sel = $("presetSelect");
+    sel.innerHTML = "";
+    var items = window.LGG_Presets.list(presetStore());
+    items.forEach(function (p) {
+      var opt = document.createElement("option");
+      opt.value = p.name;
+      opt.textContent = p.name + (p.builtin ? "" : " (custom)");
+      sel.appendChild(opt);
+    });
+    if (selectName) sel.value = selectName;
+    updateDeleteButton();
+  }
+  function updateDeleteButton() {
+    var name = $("presetSelect").value;
+    $("btnDeletePreset").disabled = !name || window.LGG_Presets.isBuiltin(name);
+  }
+  function onPresetChange() {
+    var s = window.LGG_Presets.get(presetStore(), $("presetSelect").value);
+    if (s) { applySettings(s); setStatus("Preset applied: " + $("presetSelect").value + ".", ""); }
+    updateDeleteButton();
+  }
+  function onSavePreset() {
+    var name = $("presetName").value;
+    var s = readSettings();
+    var r = window.LGG_Presets.save(presetStore(), name, {
+      type: s.type, rings: s.rings, spacing: s.spacing,
+      stroke: s.stroke, opacity: s.opacity, color: s.color,
+      columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
+      divisions: s.divisions, radius: s.radius, rotation: s.rotation
+    });
+    if (!r.ok) { setStatus(r.error, "error"); return; }
+    $("presetName").value = "";
+    refreshPresetList(name.trim());
+    setStatus("Preset saved.", "ok");
+  }
+  function onDeletePreset() {
+    var name = $("presetSelect").value;
+    var r = window.LGG_Presets.remove(presetStore(), name);
+    if (!r.ok) { setStatus(r.error, "error"); return; }
+    refreshPresetList();
+    setStatus("Preset deleted.", "ok");
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
+    restoreLast();
+    updateParamVisibility();
+    refreshPresetList();
+    $("gridType").addEventListener("change", updateParamVisibility);
     $("btnGenerate").addEventListener("click", onGenerate);
+    $("btnRegenerate").addEventListener("click", onRegenerate);
     $("btnClear").addEventListener("click", onClear);
+    $("presetSelect").addEventListener("change", onPresetChange);
+    $("btnSavePreset").addEventListener("click", onSavePreset);
+    $("btnDeletePreset").addEventListener("click", onDeletePreset);
     if (!window.LGG_Host.available()) {
       setStatus("Dev preview: open via Window > Extensions in Illustrator for live host.", "");
     }

@@ -16,9 +16,9 @@
       <label class="lgg-label" for="gridType">GRID TYPE</label>
       <select id="gridType" class="lgg-input">
         <option value="circular" selected>Circular Grid</option>
-        <option value="modular" disabled>Modular (v0.2)</option>
-        <option value="square" disabled>Square (v0.2)</option>
-        <option value="radial" disabled>Radial (v0.2)</option>
+        <option value="modular">Modular Grid</option>
+        <option value="square">Square Grid</option>
+        <option value="radial">Radial Grid</option>
         <option value="golden" disabled>Golden Ratio (v0.3)</option>
         <option value="custom" disabled>Custom (v0.3)</option>
       </select>
@@ -26,15 +26,58 @@
 
     <section class="lgg-section">
       <h2>PARAMETERS</h2>
-      <div class="lgg-row">
-        <label for="rings">Rings</label>
-        <input id="rings" class="lgg-input" type="number" value="6" min="1" max="100" step="1" />
+      <div id="params-circular">
+        <div class="lgg-row">
+          <label for="rings">Rings</label>
+          <input id="rings" class="lgg-input" type="number" value="6" min="1" max="100" step="1" />
+        </div>
       </div>
-      <div class="lgg-row">
+      <div class="lgg-row" id="row-spacing">
         <label for="spacing">Spacing</label>
         <input id="spacing" class="lgg-input" type="number" value="20" min="0" step="any" />
         <span class="lgg-unit">px</span>
       </div>
+      <div id="params-grid" style="display:none">
+        <div class="lgg-row">
+          <label for="columns">Columns</label>
+          <input id="columns" class="lgg-input" type="number" value="4" min="1" max="50" step="1" />
+        </div>
+        <div class="lgg-row">
+          <label for="rows">Rows</label>
+          <input id="rows" class="lgg-input" type="number" value="4" min="1" max="50" step="1" />
+        </div>
+      </div>
+      <div id="params-modular" style="display:none">
+        <div class="lgg-row">
+          <label for="padding">Padding</label>
+          <input id="padding" class="lgg-input" type="number" value="20" min="0" step="any" />
+          <span class="lgg-unit">px</span>
+        </div>
+      </div>
+      <div id="params-square" style="display:none">
+        <div class="lgg-row">
+          <label for="size">Cell size</label>
+          <input id="size" class="lgg-input" type="number" value="40" min="0" step="any" />
+          <span class="lgg-unit">px</span>
+        </div>
+      </div>
+      <div id="params-radial" style="display:none">
+        <div class="lgg-row">
+          <label for="divisions">Divisions</label>
+          <input id="divisions" class="lgg-input" type="number" value="12" min="1" max="360" step="1" />
+        </div>
+        <div class="lgg-row">
+          <label for="radius">Radius</label>
+          <input id="radius" class="lgg-input" type="number" value="0" min="0" step="any" title="0 = auto (base radius)" />
+          <span class="lgg-unit">px</span>
+        </div>
+        <div class="lgg-row">
+          <label for="rotation">Rotation</label>
+          <input id="rotation" class="lgg-input" type="number" value="0" step="any" />
+          <span class="lgg-unit">°</span>
+        </div>
+      </div>
+      <h2>STYLE</h2>
       <div class="lgg-row">
         <label for="stroke">Stroke</label>
         <input id="stroke" class="lgg-input" type="number" value="1" min="0" step="0.25" />
@@ -52,6 +95,25 @@
     </section>
 
     <section class="lgg-section">
+      <h2>PRESETS</h2>
+      <div class="lgg-row">
+        <select id="presetSelect" class="lgg-input"></select>
+        <button id="btnDeletePreset" type="button" class="lgg-btn lgg-btn-small" title="Delete custom preset">DEL</button>
+      </div>
+      <div class="lgg-row">
+        <input id="presetName" class="lgg-input" type="text" placeholder="My preset name" maxlength="60" />
+        <button id="btnSavePreset" type="button" class="lgg-btn lgg-btn-small">SAVE</button>
+      </div>
+    </section>
+
+    <section class="lgg-section">
+      <h2>OPTIONS</h2>
+      <label class="lgg-radio"><input id="lockGrid" type="checkbox" /> Lock generated layer</label>
+      <label class="lgg-radio"><input id="showCenter" type="checkbox" /> Include center marker</label>
+      <label class="lgg-radio"><input id="showBounds" type="checkbox" /> Include bounding box</label>
+    </section>
+
+    <section class="lgg-section">
       <h2>MULTIPLE SELECTION</h2>
       <label class="lgg-radio"><input type="radio" name="selMode" value="global" checked /> One grid for entire selection</label>
       <label class="lgg-radio"><input type="radio" name="selMode" value="perObject" /> One grid per object</label>
@@ -61,6 +123,7 @@
 
     <section class="lgg-actions">
       <button id="btnGenerate" type="button" class="lgg-btn lgg-btn-primary">GENERATE GRID</button>
+      <button id="btnRegenerate" type="button" class="lgg-btn">REGENERATE</button>
       <button id="btnClear" type="button" class="lgg-btn">CLEAR GRID</button>
     </section>
   </main>
@@ -68,6 +131,7 @@
   <!-- Official Adobe CSInterface.js must replace js/CSInterface.js from the CEP SDK. -->
   <script src="./js/CSInterface.js"></script>
   <script src="./js/geometry.js"></script>
+  <script src="./js/presets.js"></script>
   <script src="./js/host-comm.js"></script>
   <script src="./js/main.js"></script>
 </body>

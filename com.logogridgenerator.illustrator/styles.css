@@ -6,6 +6,7 @@ body {
   font: 12px/1.45 "Segoe UI", system-ui, sans-serif;
   background: #2b2b2b;
   color: #e8e8e8;
+  min-height: 100vh;
 }
 @media (prefers-color-scheme: light) {
   body { background: #f2f2f2; color: #222; }
@@ -30,3 +31,4 @@ body {
 .lgg-btn { padding: 9px; border: 1px solid #777; background: transparent; color: inherit; border-radius: 4px; cursor: pointer; letter-spacing: 0.05em; }
 .lgg-btn-primary { background: #0e6bff; border-color: #0e6bff; color: #fff; }
 .lgg-btn:disabled { opacity: 0.5; cursor: default; }
+.lgg-btn-small { flex: 0 0 auto; padding: 5px 10px; }

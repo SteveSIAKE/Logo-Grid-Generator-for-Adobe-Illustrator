@@ -74,41 +74,124 @@ function lgg_getGridLayer(doc) {
     return layer;
 }
 
-function lgg_drawCircles(centerX, centerY, radii, style) {
+function lgg_applyStyle(item, style) {
+    var strokeW = (style && style.stroke !== undefined) ? style.stroke : 1;
+    var opacity = (style && style.opacity !== undefined) ? style.opacity : 40;
+    var colorHex = (style && style.color) ? style.color : "#000000";
+    item.filled = false;
+    item.stroked = true;
+    item.strokeWidth = strokeW;
+    item.strokeColor = lgg_hexToRGBColor(colorHex);
+    item.opacity = opacity;
+}
+
+// Shared prelude: checks + layer + fresh group. Returns { doc, layer, group }
+// or { err, detail } on failure.
+function lgg_beginGrid() {
+    if (app.documents.length === 0) {
+        return { err: "NO_DOCUMENT", detail: "No Illustrator document is open." };
+    }
+    var doc = app.activeDocument;
+    if (doc.selection.length === 0) {
+        return { err: "NO_SELECTION", detail: "Please select a logo or object first." };
+    }
+    var layer = lgg_getGridLayer(doc);
+    layer.locked = false; // ensure we can draw even after a previous locked generation
+    var group = layer.groupItems.add();
+    group.name = LGG_GROUP_NAME;
+    return { doc: doc, layer: layer, group: group };
+}
+
+function lgg_maybeLock(layer, options) {
+    if (options && options.lock) {
+        layer.locked = true;
+    }
+}
+
+// NOTE: each generation runs inside a single evalScript call, so Illustrator
+// treats it as one undo unit (single Ctrl/Cmd+Z). There is no ExtendScript
+// API for explicit undo grouping — one host call is the grouping mechanism.
+
+function lgg_drawCircles(centerX, centerY, radii, style, options) {
+    try {
+        var g = lgg_beginGrid();
+        if (g.err) {
+            return lgg_json({ ok: false, error: g.err, detail: g.detail });
+        }
+        var created = 0;
+        for (var i = 0; i < radii.length; i++) {
+            var r = radii[i];
+            // ellipse(top, left, width, height, ...) — centered on (centerX, centerY)
+            var e = g.group.pathItems.ellipse(centerY + r, centerX - r, r * 2, r * 2, false, false);
+            lgg_applyStyle(e, style);
+            e.name = "Circle " + (i + 1 < 10 ? "0" : "") + (i + 1);
+            created++;
+        }
+        lgg_maybeLock(g.layer, options);
+        return lgg_json({ ok: true, created: created });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+// rects: [{ left, top, width, height }] with top = max Y.
+function lgg_drawRects(rects, style, options) {
+    try {
+        var g = lgg_beginGrid();
+        if (g.err) {
+            return lgg_json({ ok: false, error: g.err, detail: g.detail });
+        }
+        var created = 0;
+        for (var i = 0; i < rects.length; i++) {
+            var rc = rects[i];
+            var p = g.group.pathItems.rectangle(rc.top, rc.left, rc.width, rc.height);
+            lgg_applyStyle(p, style);
+            p.name = "Rect " + (i + 1 < 10 ? "0" : "") + (i + 1);
+            created++;
+        }
+        lgg_maybeLock(g.layer, options);
+        return lgg_json({ ok: true, created: created });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+// lines: [{ x1, y1, x2, y2 }]
+function lgg_drawLines(lines, style, options) {
+    try {
+        var g = lgg_beginGrid();
+        if (g.err) {
+            return lgg_json({ ok: false, error: g.err, detail: g.detail });
+        }
+        var created = 0;
+        for (var i = 0; i < lines.length; i++) {
+            var ln = lines[i];
+            var p = g.group.pathItems.add();
+            p.setEntirePath([[ln.x1, ln.y1], [ln.x2, ln.y2]]);
+            lgg_applyStyle(p, style);
+            p.name = "Line " + (i + 1 < 10 ? "0" : "") + (i + 1);
+            created++;
+        }
+        lgg_maybeLock(g.layer, options);
+        return lgg_json({ ok: true, created: created });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+function lgg_setGridLocked(locked) {
     try {
         if (app.documents.length === 0) {
             return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
         }
         var doc = app.activeDocument;
-        if (doc.selection.length === 0) {
-            return lgg_json({ ok: false, error: "NO_SELECTION", detail: "Please select a logo or object first." });
+        var layer = null;
+        try { layer = doc.layers.getByName(LGG_LAYER_NAME); } catch (e) { layer = null; }
+        if (layer === null || layer === undefined) {
+            return lgg_json({ ok: true, locked: false });
         }
-        var layer = lgg_getGridLayer(doc);
-        if (layer.locked) {
-            return lgg_json({ ok: false, error: "LOCKED", detail: "The document or target layer is locked. Please unlock it before generating the grid." });
-        }
-        var group = layer.groupItems.add();
-        group.name = LGG_GROUP_NAME;
-
-        var strokeW = (style && style.stroke !== undefined) ? style.stroke : 1;
-        var opacity = (style && style.opacity !== undefined) ? style.opacity : 40;
-        var colorHex = (style && style.color) ? style.color : "#000000";
-        var rgb = lgg_hexToRGBColor(colorHex);
-
-        var created = 0;
-        for (var i = 0; i < radii.length; i++) {
-            var r = radii[i];
-            // ellipse(top, left, width, height, ...) — centered on (centerX, centerY)
-            var e = group.pathItems.ellipse(centerY + r, centerX - r, r * 2, r * 2, false, false);
-            e.filled = false;
-            e.stroked = true;
-            e.strokeWidth = strokeW;
-            e.strokeColor = rgb;
-            e.opacity = opacity;
-            e.name = "Circle " + (i + 1 < 10 ? "0" : "") + (i + 1);
-            created++;
-        }
-        return lgg_json({ ok: true, created: created });
+        layer.locked = !!locked;
+        return lgg_json({ ok: true, locked: !!locked });
     } catch (e) {
         return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
     }
@@ -125,6 +208,7 @@ function lgg_clearGrid() {
         if (layer === null || layer === undefined) {
             return lgg_json({ ok: true, removed: false });
         }
+        layer.locked = false; // a locked grid layer must still be removable by Clear
         layer.remove();
         return lgg_json({ ok: true, removed: true });
     } catch (e) {
