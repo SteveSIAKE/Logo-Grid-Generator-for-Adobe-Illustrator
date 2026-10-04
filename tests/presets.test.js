@@ -15,9 +15,9 @@ const CIRCULAR = P.withDefaults({ type: "circular", rings: 6, spacing: 20, strok
 const RADIAL = P.withDefaults({ type: "radial", divisions: 12, radius: 0, rotation: 15 });
 
 describe("presets", () => {
-  it("lists 6 built-ins with empty store", () => {
+  it("lists 8 built-ins with empty store", () => {
     const all = P.list(memStore());
-    assert.equal(all.length, 6);
+    assert.equal(all.length, 8);
     assert.ok(all.every((p) => p.builtin));
   });
   it("get returns a copy of Circular Pro", () => {
@@ -26,16 +26,20 @@ describe("presets", () => {
     s.rings = 99;
     assert.equal(P.get(memStore(), "Circular Pro").rings, 6);
   });
-  it("built-in radial preset carries its type", () => {
-    const s = P.get(memStore(), "Radial Star 12");
-    assert.equal(s.type, "radial");
-    assert.equal(s.divisions, 12);
+  it("built-in golden/custom presets carry their type", () => {
+    const g = P.get(memStore(), "Golden Progression");
+    assert.equal(g.type, "golden");
+    assert.equal(g.levels, 5);
+    const c = P.get(memStore(), "Custom 3x2");
+    assert.equal(c.type, "custom");
+    assert.equal(c.columns, 3);
+    assert.equal(c.rows, 2);
   });
   it("save + list + get custom radial", () => {
     const st = memStore();
     assert.deepEqual(P.save(st, "My Star", RADIAL), { ok: true });
     const all = P.list(st);
-    assert.equal(all.length, 7);
+    assert.equal(all.length, 9);
     assert.deepEqual(P.get(st, "My Star"), RADIAL);
   });
   it("rejects empty name and builtin names", () => {
@@ -48,7 +52,9 @@ describe("presets", () => {
     assert.equal(P.save(st, "Bad", { ...CIRCULAR, rings: -5 }).ok, false);
     assert.equal(P.save(st, "Bad2", { ...RADIAL, divisions: 500 }).ok, false);
     assert.equal(P.save(st, "Bad3", { ...CIRCULAR, type: "square", size: 0 }).ok, false);
-    assert.equal(P.list(st).length, 6);
+    assert.equal(P.save(st, "Bad4", { ...CIRCULAR, type: "golden", levels: 99 }).ok, false);
+    assert.equal(P.save(st, "Bad5", { ...CIRCULAR, type: "custom", gridW: 0 }).ok, false);
+    assert.equal(P.list(st).length, 8);
   });
   it("backfills v0.1 circular-only customs", () => {
     const st = memStore(JSON.stringify({ Legacy: { rings: 5, spacing: 10, stroke: 1, opacity: 40, color: "#000000" } }));
@@ -66,6 +72,6 @@ describe("presets", () => {
   });
   it("corrupt store JSON is ignored", () => {
     const all = P.list(memStore("{not json"));
-    assert.equal(all.length, 6);
+    assert.equal(all.length, 8);
   });
 });

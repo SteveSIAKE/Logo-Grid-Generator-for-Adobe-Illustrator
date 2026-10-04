@@ -179,6 +179,29 @@ function lgg_drawLines(lines, style, options) {
     }
 }
 
+// polys: [{ pts: [[x,y] x4] }] — used by the Custom grid (rotated cells).
+function lgg_drawPolygons(polys, style, options) {
+    try {
+        var g = lgg_beginGrid();
+        if (g.err) {
+            return lgg_json({ ok: false, error: g.err, detail: g.detail });
+        }
+        var created = 0;
+        for (var i = 0; i < polys.length; i++) {
+            var p = g.group.pathItems.add();
+            p.setEntirePath(polys[i].pts);
+            p.closed = true;
+            lgg_applyStyle(p, style);
+            p.name = "Poly " + (i + 1 < 10 ? "0" : "") + (i + 1);
+            created++;
+        }
+        lgg_maybeLock(g.layer, options);
+        return lgg_json({ ok: true, created: created });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
 function lgg_setGridLocked(locked) {
     try {
         if (app.documents.length === 0) {

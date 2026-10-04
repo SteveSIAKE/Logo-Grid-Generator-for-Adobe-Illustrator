@@ -11,7 +11,10 @@
     type: "circular",
     rings: 6, spacing: 20, stroke: 1, opacity: 40, color: "#000000",
     columns: 4, rows: 4, padding: 20, size: 40,
-    divisions: 12, radius: 0, rotation: 0
+    divisions: 12, radius: 0, rotation: 0,
+    baseSize: 0, levels: 5,
+    gridW: 240, gridH: 120, spacingV: 10, offsetX: 0, offsetY: 0,
+    combine: false, combineDiv: 12
   };
 
   function full(o) {
@@ -27,7 +30,9 @@
     { name: "Fine Lines", builtin: true, settings: full({ type: "circular", rings: 8, spacing: 12, stroke: 0.5, opacity: 30, color: "#000000" }) },
     { name: "Brand Construction", builtin: true, settings: full({ type: "circular", rings: 10, spacing: 25, stroke: 1, opacity: 50, color: "#ff0000" }) },
     { name: "Radial Star 12", builtin: true, settings: full({ type: "radial", divisions: 12, radius: 0, rotation: 0, stroke: 0.75, opacity: 40, color: "#000000" }) },
-    { name: "Modular 4x4", builtin: true, settings: full({ type: "modular", columns: 4, rows: 4, spacing: 10, padding: 20, stroke: 0.75, opacity: 40, color: "#000000" }) }
+    { name: "Modular 4x4", builtin: true, settings: full({ type: "modular", columns: 4, rows: 4, spacing: 10, padding: 20, stroke: 0.75, opacity: 40, color: "#000000" }) },
+    { name: "Golden Progression", builtin: true, settings: full({ type: "golden", baseSize: 0, levels: 5, stroke: 0.75, opacity: 40, color: "#000000" }) },
+    { name: "Custom 3x2", builtin: true, settings: full({ type: "custom", gridW: 240, gridH: 120, columns: 3, rows: 2, spacing: 10, spacingV: 10, offsetX: 0, offsetY: 0, rotation: 0, stroke: 0.75, opacity: 40, color: "#000000" }) }
   ];
 
   function clone(s) { return full(s); }
@@ -37,7 +42,8 @@
   }
 
   function isGridType(t) {
-    return t === "circular" || t === "modular" || t === "square" || t === "radial";
+    return t === "circular" || t === "modular" || t === "square" ||
+      t === "radial" || t === "golden" || t === "custom";
   }
 
   // Store abstraction: { get(): string|null, set(str): void }. Browser impl uses localStorage.

@@ -28,6 +28,15 @@ export const DEFAULTS: GridSettings = {
     divisions: 12,
     radius: 0,
     rotation: 0,
+    baseSize: 0,
+    levels: 5,
+    gridW: 240,
+    gridH: 120,
+    spacingV: 10,
+    offsetX: 0,
+    offsetY: 0,
+    combine: false,
+    combineDiv: 12,
 };
 
 /** Fill missing keys (e.g. presets saved by v0.1 circular-only builds). */
@@ -46,6 +55,8 @@ export const BUILTINS: Preset[] = [
     { name: "Brand Construction", builtin: true, settings: full({ type: "circular", rings: 10, spacing: 25, stroke: 1, opacity: 50, color: "#ff0000" }) },
     { name: "Radial Star 12", builtin: true, settings: full({ type: "radial", divisions: 12, radius: 0, rotation: 0, stroke: 0.75, opacity: 40, color: "#000000" }) },
     { name: "Modular 4x4", builtin: true, settings: full({ type: "modular", columns: 4, rows: 4, spacing: 10, padding: 20, stroke: 0.75, opacity: 40, color: "#000000" }) },
+    { name: "Golden Progression", builtin: true, settings: full({ type: "golden", baseSize: 0, levels: 5, stroke: 0.75, opacity: 40, color: "#000000" }) },
+    { name: "Custom 3x2", builtin: true, settings: full({ type: "custom", gridW: 240, gridH: 120, columns: 3, rows: 2, spacing: 10, spacingV: 10, offsetX: 0, offsetY: 0, rotation: 0, stroke: 0.75, opacity: 40, color: "#000000" }) },
 ];
 
 function clone(s: GridSettings): GridSettings {
@@ -111,7 +122,10 @@ export function savePreset(
 }
 
 function isGridType(t: unknown): t is GridType {
-    return t === "circular" || t === "modular" || t === "square" || t === "radial";
+    return (
+        t === "circular" || t === "modular" || t === "square" ||
+        t === "radial" || t === "golden" || t === "custom"
+    );
 }
 
 export function removePreset(store: PresetStore, name: string): { ok: boolean; error?: string } {

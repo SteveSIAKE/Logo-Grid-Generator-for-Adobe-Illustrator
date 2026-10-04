@@ -105,6 +105,67 @@ describe("square", () => {
   });
 });
 
+describe("golden", () => {
+  it("levels grow by PHI and alternate orientation", () => {
+    const { phi, rects } = G.goldenRects(0, 0, 100, 4);
+    assert.ok(Math.abs(phi - 1.618033988749895) < 1e-12);
+    assert.equal(rects.length, 4);
+    // level 0 landscape: w=100, h=100/PHI
+    assert.equal(rects[0].width, 100);
+    assert.ok(Math.abs(rects[0].height - 100 / phi) < 1e-9);
+    // level 1 portrait: w=100*PHI/PHI=100... check growth instead
+    assert.ok(Math.abs(rects[1].height - 100 * phi) < 1e-9);
+    assert.ok(Math.abs(rects[2].width - 100 * phi * phi) < 1e-9);
+    // all centered on origin
+    for (const r of rects) {
+      assert.ok(Math.abs(r.left + r.width / 2) < 1e-9);
+      assert.ok(Math.abs(r.top - r.height / 2) < 1e-9);
+    }
+  });
+  it("w/h ratio is PHI", () => {
+    const { rects } = G.goldenRects(10, 20, 50, 3);
+    for (const r of rects) {
+      const ratio = Math.max(r.width, r.height) / Math.min(r.width, r.height);
+      assert.ok(Math.abs(ratio - G.PHI) < 1e-9);
+    }
+  });
+});
+
+describe("custom", () => {
+  it("2x2 no rotation/offset: axis-aligned cells", () => {
+    const { cellW, cellH, polys } = G.customPolygons(0, 0, 100, 60, 2, 2, 10, 10, 0, 0, 0);
+    assert.equal(cellW, 45);
+    assert.equal(cellH, 25);
+    assert.equal(polys.length, 4);
+    assert.deepEqual(polys[0].pts, [[-50, 30], [-5, 30], [-5, 5], [-50, 5]]);
+  });
+  it("offset shifts the whole grid", () => {
+    const a = G.customPolygons(0, 0, 100, 60, 1, 1, 0, 0, 0, 0, 0);
+    const b = G.customPolygons(0, 0, 100, 60, 1, 1, 0, 0, 10, -5, 0);
+    assert.deepEqual(b.polys[0].pts[0], [a.polys[0].pts[0][0] + 10, a.polys[0].pts[0][1] - 5]);
+  });
+  it("rotation=90 preserves extents, rotation=0 is identity", () => {
+    const plain = G.customPolygons(0, 0, 100, 60, 1, 1, 0, 0, 0, 0, 0);
+    assert.deepEqual(plain.polys[0].pts, [[-50, 30], [50, 30], [50, -30], [-50, -30]]);
+    const rot = G.customPolygons(0, 0, 100, 60, 1, 1, 0, 0, 0, 0, 90);
+    const xs = rot.polys[0].pts.map((p) => p[0]).sort((x, y) => x - y);
+    assert.ok(Math.abs(xs[0] + 30) < 1e-9 && Math.abs(xs[3] - 30) < 1e-9);
+  });
+});
+
+describe("combine", () => {
+  it("overlayRadius matches outer ring for circular", () => {
+    const b = G.makeBounds(0, 100, 200, 100);
+    const s = { type: "circular", rings: 3, spacing: 20 };
+    assert.equal(G.overlayRadius(s, b), 140);
+  });
+  it("overlayRadius covers custom grid diagonal", () => {
+    const b = G.makeBounds(0, 0, 10, 10);
+    const s = { type: "custom", gridW: 60, gridH: 80 };
+    assert.equal(G.overlayRadius(s, b), 50);
+  });
+});
+
 describe("validation", () => {
   it("rejects Rings=-5", () => {
     const errs = G.validateCircular({ rings: -5, spacing: 20, stroke: 1, opacity: 40, color: "#000000" });
@@ -123,11 +184,17 @@ describe("validation", () => {
     assert.deepEqual(G.validateGrid({ type: "modular", columns: 4, rows: 4, spacing: 10, padding: 20, ...base }), []);
     assert.deepEqual(G.validateGrid({ type: "square", size: 40, columns: 3, rows: 3, spacing: 10, ...base }), []);
     assert.deepEqual(G.validateGrid({ type: "radial", divisions: 12, radius: 0, rotation: 0, ...base }), []);
+    assert.deepEqual(G.validateGrid({ type: "golden", baseSize: 0, levels: 5, ...base }), []);
+    assert.deepEqual(G.validateGrid({ type: "custom", gridW: 240, gridH: 120, columns: 3, rows: 2, spacing: 10, spacingV: 10, offsetX: 0, offsetY: 0, rotation: 0, ...base }), []);
     assert.ok(G.validateGrid({ type: "modular", columns: 0, rows: 4, spacing: 10, padding: 0, ...base }).length > 0);
     assert.ok(G.validateGrid({ type: "modular", columns: 51, rows: 51, spacing: 0, padding: 0, ...base }).length > 0);
     assert.ok(G.validateGrid({ type: "square", size: 0, columns: 2, rows: 2, spacing: 5, ...base }).length > 0);
     assert.ok(G.validateGrid({ type: "radial", divisions: 361, radius: 10, rotation: 0, ...base }).length > 0);
     assert.ok(G.validateGrid({ type: "radial", divisions: 8, radius: -1, rotation: 0, ...base }).length > 0);
+    assert.ok(G.validateGrid({ type: "golden", baseSize: 10, levels: 99, ...base }).length > 0);
+    assert.ok(G.validateGrid({ type: "custom", gridW: 0, gridH: 120, columns: 2, rows: 2, spacing: 5, spacingV: 5, offsetX: 0, offsetY: 0, rotation: 0, ...base }).length > 0);
+    assert.ok(G.validateGrid({ type: "circular", rings: 6, spacing: 20, combine: true, combineDiv: 0, ...base }).length > 0);
+    assert.deepEqual(G.validateGrid({ type: "circular", rings: 6, spacing: 20, combine: true, combineDiv: 12, ...base }), []);
   });
 });
 

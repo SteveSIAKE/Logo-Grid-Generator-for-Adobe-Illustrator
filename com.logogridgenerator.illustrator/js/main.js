@@ -31,6 +31,15 @@
       divisions: parseInt($("divisions").value, 10),
       radius: num("radius", NaN),
       rotation: num("rotation", 0),
+      baseSize: num("base", NaN),
+      levels: parseInt($("levels").value, 10),
+      gridW: num("gwidth", NaN),
+      gridH: num("gheight", NaN),
+      spacingV: num("spacingV", NaN),
+      offsetX: num("offX", 0),
+      offsetY: num("offY", 0),
+      combine: $("combine").checked,
+      combineDiv: parseInt($("combineDiv").value, 10),
       selectionMode: selMode,
       lock: $("lockGrid").checked,
       showCenter: $("showCenter").checked,
@@ -51,6 +60,13 @@
     if (s.divisions !== undefined) $("divisions").value = s.divisions;
     if (s.radius !== undefined) $("radius").value = s.radius;
     if (s.rotation !== undefined) $("rotation").value = s.rotation;
+    if (s.baseSize !== undefined) $("base").value = s.baseSize;
+    if (s.levels !== undefined) $("levels").value = s.levels;
+    if (s.gridW !== undefined) $("gwidth").value = s.gridW;
+    if (s.gridH !== undefined) $("gheight").value = s.gridH;
+    if (s.spacingV !== undefined) $("spacingV").value = s.spacingV;
+    if (s.offsetX !== undefined) $("offX").value = s.offsetX;
+    if (s.offsetY !== undefined) $("offY").value = s.offsetY;
   }
   function persistLast(s) {
     try {
@@ -59,8 +75,12 @@
         stroke: s.stroke, opacity: s.opacity, color: s.color,
         columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
         divisions: s.divisions, radius: s.radius, rotation: s.rotation,
+        baseSize: s.baseSize, levels: s.levels,
+        gridW: s.gridW, gridH: s.gridH, spacingV: s.spacingV,
+        offsetX: s.offsetX, offsetY: s.offsetY,
         selectionMode: s.selectionMode, lock: s.lock,
-        showCenter: s.showCenter, showBounds: s.showBounds
+        showCenter: s.showCenter, showBounds: s.showBounds,
+        combine: s.combine, combineDiv: s.combineDiv
       }));
     } catch (e) { /* private mode etc. — persistence is best-effort */ }
   }
@@ -77,6 +97,8 @@
       if (s.lock !== undefined) $("lockGrid").checked = !!s.lock;
       if (s.showCenter !== undefined) $("showCenter").checked = !!s.showCenter;
       if (s.showBounds !== undefined) $("showBounds").checked = !!s.showBounds;
+      if (s.combine !== undefined) $("combine").checked = !!s.combine;
+      if (s.combineDiv !== undefined) $("combineDiv").value = s.combineDiv;
     } catch (e) { /* corrupt -> keep defaults */ }
   }
   function setBusy(b) {
@@ -89,12 +111,17 @@
   }
   function updateParamVisibility() {
     var t = $("gridType").value;
+    var isRectGrid = (t === "modular" || t === "square" || t === "custom");
     $("params-circular").style.display = (t === "circular") ? "" : "none";
-    $("row-spacing").style.display = (t === "radial") ? "none" : "";
-    $("params-grid").style.display = (t === "modular" || t === "square") ? "" : "none";
+    $("row-spacing").style.display = (t === "circular" || isRectGrid) ? "" : "none";
+    $("params-grid").style.display = isRectGrid ? "" : "none";
     $("params-modular").style.display = (t === "modular") ? "" : "none";
     $("params-square").style.display = (t === "square") ? "" : "none";
     $("params-radial").style.display = (t === "radial") ? "" : "none";
+    $("params-rotation").style.display = (t === "radial" || t === "custom") ? "" : "none";
+    $("params-golden").style.display = (t === "golden") ? "" : "none";
+    $("params-custom").style.display = (t === "custom") ? "" : "none";
+    $("row-combine").style.display = (t === "radial") ? "none" : "";
   }
 
   function toBounds(b) {
@@ -123,6 +150,20 @@
       var rr = await window.LGG_Host.call("lgg_drawLines", [rl.lines, style, options]);
       if (!rr.ok) return { ok: false, error: "Illustrator error: " + (rr.detail || rr.error) };
       return { ok: true, made: rr.created, kind: "lines" };
+    }
+    if (s.type === "golden") {
+      var base = s.baseSize > 0 ? s.baseSize : window.LGG_Geometry.goldenAutoBase(bounds);
+      var g = window.LGG_Geometry.goldenRects(cx, cy, base, s.levels);
+      var rg = await window.LGG_Host.call("lgg_drawRects", [g.rects, style, options]);
+      if (!rg.ok) return { ok: false, error: "Illustrator error: " + (rg.detail || rg.error) };
+      return { ok: true, made: rg.created, kind: "rects" };
+    }
+    if (s.type === "custom") {
+      var cp = window.LGG_Geometry.customPolygons(cx, cy, s.gridW, s.gridH, s.columns, s.rows,
+        s.spacing, s.spacingV, s.offsetX, s.offsetY, s.rotation);
+      var rp = await window.LGG_Host.call("lgg_drawPolygons", [cp.polys, style, options]);
+      if (!rp.ok) return { ok: false, error: "Illustrator error: " + (rp.detail || rp.error) };
+      return { ok: true, made: rp.created, kind: "cells" };
     }
     var circ = window.LGG_Geometry.circularRadii(bounds, s.rings, s.spacing);
     var rc = await window.LGG_Host.call("lgg_drawCircles", [cx, cy, circ.radii, style, options]);
@@ -173,6 +214,13 @@
       kind = r.kind;
       var ov = await drawOverlays(s, targets[t], style, options);
       if (!ov.ok) return ov;
+      if (s.combine && s.type !== "radial") {
+        var R = window.LGG_Geometry.overlayRadius(s, targets[t]);
+        var combo = window.LGG_Geometry.radialLines(targets[t].centerX, targets[t].centerY, R, s.combineDiv, 0);
+        var rc2 = await window.LGG_Host.call("lgg_drawLines", [combo.lines, style, options]);
+        if (!rc2.ok) return { ok: false, error: "Illustrator error: " + (rc2.detail || rc2.error) };
+        made += rc2.created;
+      }
     }
     if (s.lock) {
       var lk = await window.LGG_Host.call("lgg_setGridLocked", [true]);
@@ -253,7 +301,10 @@
       type: s.type, rings: s.rings, spacing: s.spacing,
       stroke: s.stroke, opacity: s.opacity, color: s.color,
       columns: s.columns, rows: s.rows, padding: s.padding, size: s.size,
-      divisions: s.divisions, radius: s.radius, rotation: s.rotation
+      divisions: s.divisions, radius: s.radius, rotation: s.rotation,
+      baseSize: s.baseSize, levels: s.levels,
+      gridW: s.gridW, gridH: s.gridH, spacingV: s.spacingV,
+      offsetX: s.offsetX, offsetY: s.offsetY
     });
     if (!r.ok) { setStatus(r.error, "error"); return; }
     $("presetName").value = "";

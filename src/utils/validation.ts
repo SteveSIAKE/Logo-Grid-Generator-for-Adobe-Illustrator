@@ -4,7 +4,7 @@ export interface GridStyle {
     color: string; // #RRGGBB
 }
 
-export type GridType = "circular" | "modular" | "square" | "radial";
+export type GridType = "circular" | "modular" | "square" | "radial" | "golden" | "custom";
 
 export interface CircularSettings extends GridStyle {
     rings: number;
@@ -23,12 +23,22 @@ export interface GridSettings extends GridStyle {
     divisions: number;
     radius: number; // 0 = auto (baseRadius)
     rotation: number;
+    baseSize: number; // golden, 0 = auto
+    levels: number; // golden
+    gridW: number; // custom
+    gridH: number; // custom
+    spacingV: number; // custom vertical gap
+    offsetX: number; // custom
+    offsetY: number; // custom
+    combine: boolean; // radial overlay on top of the main grid
+    combineDiv: number;
 }
 
 export const MAX_RINGS = 100;
 export const MAX_DIVISIONS = 360;
 export const MAX_DIM = 50;
 export const MAX_CELLS = 2500;
+export const MAX_LEVELS = 10;
 
 function isNum(x: unknown): x is number {
     return typeof x === "number" && isFinite(x);
@@ -87,14 +97,52 @@ export function validateRadial(s: GridSettings): string[] {
 
 /** Dispatch validation by grid type (unknown type → circular). */
 export function validateGrid(s: GridSettings): string[] {
+    let errs: string[];
     switch ((s && s.type) || "circular") {
         case "modular":
-            return validateModular(s);
+            errs = validateModular(s);
+            break;
         case "square":
-            return validateSquare(s);
+            errs = validateSquare(s);
+            break;
         case "radial":
-            return validateRadial(s);
+            errs = validateRadial(s);
+            break;
+        case "golden":
+            errs = validateGolden(s);
+            break;
+        case "custom":
+            errs = validateCustom(s);
+            break;
         default:
-            return validateCircular(s);
+            errs = validateCircular(s);
+            break;
     }
+    if (s && s.combine && (!isNum(s.combineDiv) || s.combineDiv < 1 || s.combineDiv > MAX_DIVISIONS)) {
+        errs.push(`Combine divisions must be 1–${MAX_DIVISIONS}.`);
+    }
+    return errs;
+}
+
+export function validateGolden(s: GridSettings): string[] {
+    const errs: string[] = [];
+    if (!isNum(s.baseSize) || s.baseSize < 0) errs.push("Base must be >= 0 (0 = auto).");
+    if (!isNum(s.levels) || s.levels < 1 || s.levels > MAX_LEVELS) {
+        errs.push(`Levels must be 1–${MAX_LEVELS}.`);
+    }
+    validateStyle(s, errs);
+    return errs;
+}
+
+export function validateCustom(s: GridSettings): string[] {
+    const errs: string[] = [];
+    if (!isNum(s.gridW) || s.gridW <= 0) errs.push("Width must be > 0.");
+    if (!isNum(s.gridH) || s.gridH <= 0) errs.push("Height must be > 0.");
+    validateGridDims(s, errs); // columns / rows / cells + horizontal spacing
+    if (!isNum(s.spacingV) || s.spacingV < 0) errs.push("V spacing must be >= 0.");
+    if (!isNum(s.offsetX)) errs.push("Offset X must be a number.");
+    if (!isNum(s.offsetY)) errs.push("Offset Y must be a number.");
+    if (!isNum(s.rotation)) errs.push("Rotation must be a number.");
+    validateStyle(s, errs);
+    return errs;
 }
