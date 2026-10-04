@@ -3,22 +3,32 @@
 > Techno figée : **CEP + ExtendScript**. UXP n'est pas public pour Illustrator
 > en 2026 (interne Adobe uniquement). Le jour où UXP s'ouvrira, seul le module
 > `js/host-comm.js` + `jsx/host.jsx` sera à réécrire (logique déjà isolée).
+>
+> Testé sur : **Illustrator 2026 (v30.7) + CEP 12**, Windows.
 
 ## 1. Installation développeur (non signée)
 
 ### 1.1 Activer le mode debug (extensions non signées)
 
+Choisir la clé selon le runtime CEP d'Illustrator (**les deux si doute**) :
+Illustrator 2026 = CEP 12 (`CSXS.12`), Illustrator 2024 = CEP 11 (`CSXS.11`).
+
 **Windows** (PowerShell admin) :
 
 ```powershell
+reg add "HKCU\Software\Adobe\CSXS.12" /v PlayerDebugMode /t REG_SZ /d 1 /f
 reg add "HKCU\Software\Adobe\CSXS.11" /v PlayerDebugMode /t REG_SZ /d 1 /f
 ```
 
 **macOS** :
 
 ```bash
+defaults write com.adobe.CSXS.12 PlayerDebugMode 1
 defaults write com.adobe.CSXS.11 PlayerDebugMode 1
 ```
+
+> Sans la clé correspondant au runtime, le panneau peut afficher son onglet
+> mais rester vide (contenu jamais démarré, port `.debug` fermé).
 
 ### 1.2 Copier l'extension
 

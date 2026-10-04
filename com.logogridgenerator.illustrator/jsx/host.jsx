@@ -97,6 +97,7 @@ function lgg_beginGrid() {
     }
     var layer = lgg_getGridLayer(doc);
     layer.locked = false; // ensure we can draw even after a previous locked generation
+    layer.visible = true; // a new generation is always shown; use Hide to conceal it
     var group = layer.groupItems.add();
     group.name = LGG_GROUP_NAME;
     return { doc: doc, layer: layer, group: group };
@@ -202,8 +203,40 @@ function lgg_drawPolygons(polys, style, options) {
     }
 }
 
-function lgg_setGridLocked(locked) {
+function lgg_gridInfo() {
     try {
+        if (app.documents.length === 0) {
+            return lgg_json({ ok: true, exists: false });
+        }
+        var layer = null;
+        try { layer = app.activeDocument.layers.getByName(LGG_LAYER_NAME); } catch (e) { layer = null; }
+        if (layer === null || layer === undefined) {
+            return lgg_json({ ok: true, exists: false });
+        }
+        return lgg_json({ ok: true, exists: true, locked: !!layer.locked, visible: layer.visible !== false });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+function lgg_setGridVisible(visible) {
+    try {
+        if (app.documents.length === 0) {
+            return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
+        }
+        var layer = null;
+        try { layer = app.activeDocument.layers.getByName(LGG_LAYER_NAME); } catch (e) { layer = null; }
+        if (layer === null || layer === undefined) {
+            return lgg_json({ ok: true, exists: false, visible: false });
+        }
+        layer.visible = !!visible;
+        return lgg_json({ ok: true, exists: true, visible: !!visible });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+function lgg_setGridLocked(locked) {    try {
         if (app.documents.length === 0) {
             return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
         }

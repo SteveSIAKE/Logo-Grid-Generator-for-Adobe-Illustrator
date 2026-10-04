@@ -108,6 +108,7 @@
     $("btnGenerate").disabled = b;
     $("btnRegenerate").disabled = b;
     $("btnClear").disabled = b;
+    $("btnVisibility").disabled = b;
   }
   function presetStore() {
     return window.LGG_Presets.localStorageStore();
@@ -282,6 +283,7 @@
       if (!r.ok) { setStatus(r.error, "error"); return; }
       persistLast(s);
       setStatus("Grid created: " + r.made + " " + r.kind + ".", "ok");
+      await refreshVisibility();
     } finally { setBusy(false); }
   }
 
@@ -301,6 +303,7 @@
       if (!r.ok) { setStatus(r.error, "error"); return; }
       persistLast(s);
       setStatus("Grid regenerated: " + r.made + " " + r.kind + ".", "ok");
+      await refreshVisibility();
     } finally { setBusy(false); }
   }
 
@@ -311,6 +314,38 @@
       var res = await window.LGG_Host.call("lgg_clearGrid", []);
       if (!res.ok) { setStatus(res.error === "NO_HOST" ? res.detail : "Illustrator error: " + (res.detail || res.error), "error"); return; }
       setStatus(res.removed ? "Grid removed. Logo intact." : "No grid layer to remove.", "ok");
+      await refreshVisibility();
+    } finally { setBusy(false); }
+  }
+
+  var gridVisible = true;
+
+  async function refreshVisibility() {
+    var btn = $("btnVisibility");
+    try {
+      var info = await window.LGG_Host.call("lgg_gridInfo", []);
+      if (!info.ok || !info.exists) {
+        btn.textContent = "HIDE GRID";
+        btn.disabled = true;
+        return;
+      }
+      gridVisible = info.visible !== false;
+      btn.textContent = gridVisible ? "HIDE GRID" : "SHOW GRID";
+      btn.disabled = false;
+    } catch (e) {
+      btn.textContent = "HIDE GRID";
+      btn.disabled = true;
+    }
+  }
+
+  async function onToggleVisibility() {
+    setStatus("");
+    setBusy(true);
+    try {
+      var res = await window.LGG_Host.call("lgg_setGridVisible", [!gridVisible]);
+      if (!res.ok) { setStatus(res.error === "NO_HOST" ? res.detail : "Illustrator error: " + (res.detail || res.error), "error"); return; }
+      await refreshVisibility();
+      setStatus(gridVisible ? "Grid shown." : "Grid hidden.", "ok");
     } finally { setBusy(false); }
   }
 
@@ -416,6 +451,8 @@
     $("btnDeletePreset").addEventListener("click", onDeletePreset);
     $("btnExport").addEventListener("click", onExport);
     $("importFile").addEventListener("change", onImportFile);
+    $("btnVisibility").addEventListener("click", onToggleVisibility);
+    refreshVisibility();
     if (!window.LGG_Host.available()) {
       setStatus("Dev preview: open via Window > Extensions in Illustrator for live host.", "");
     }
