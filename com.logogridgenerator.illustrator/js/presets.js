@@ -123,8 +123,33 @@
     return { ok: true };
   }
 
-  function localStorageStore(key) {
-    key = key || STORE_KEY;
+  // JSON exchange format: { app, version: 1, presets: [{ name, settings }] }.
+  // A single-preset file { name, version, settings } is also accepted.
+  function exportJson(store) {
+    var customs = loadCustoms(store);
+    var names = Object.keys(customs).sort();
+    return JSON.stringify({
+      app: "logo-grid-generator",
+      version: 1,
+      presets: names.map(function (n) { return { name: n, settings: clone(customs[n]) }; })
+    }, null, 2);
+  }
+
+  function importJson(store, text) {
+    var o = JSON.parse(text); // throws on invalid JSON — caller reports it
+    var list = o && o.presets ? o.presets
+      : (o && o.settings ? [{ name: o.name, settings: o.settings }] : null);
+    if (!Array.isArray(list)) return { ok: false, error: "Invalid preset file." };
+    var imported = 0, skipped = [];
+    list.forEach(function (p) {
+      var r = save(store, p && p.name, p && p.settings);
+      if (r.ok) imported++;
+      else skipped.push({ name: (p && p.name) || "?", error: r.error });
+    });
+    return { ok: true, imported: imported, skipped: skipped };
+  }
+
+  function localStorageStore(key) {    key = key || STORE_KEY;
     return {
       get: function () {
         try { return global.localStorage.getItem(key); }
@@ -147,6 +172,8 @@
     save: save,
     remove: remove,
     isBuiltin: isBuiltin,
+    exportJson: exportJson,
+    importJson: importJson,
     localStorageStore: localStorageStore
   };
 

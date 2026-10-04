@@ -74,4 +74,35 @@ describe("presets", () => {
     const all = P.list(memStore("{not json"));
     assert.equal(all.length, 8);
   });
+  it("export/import round-trip", () => {
+    const a = memStore();
+    P.save(a, "Alpha", CIRCULAR);
+    P.save(a, "Beta", RADIAL);
+    const json = P.exportJson(a);
+    const file = JSON.parse(json);
+    assert.equal(file.app, "logo-grid-generator");
+    assert.equal(file.version, 1);
+    assert.equal(file.presets.length, 2);
+    const b = memStore();
+    const res = P.importJson(b, json);
+    assert.deepEqual([res.ok, res.imported, res.skipped.length], [true, 2, 0]);
+    assert.deepEqual(P.get(b, "Beta"), RADIAL);
+  });
+  it("import accepts single-preset format, skips invalid", () => {
+    const st = memStore();
+    const single = JSON.stringify({ name: "Solo", version: 1, settings: CIRCULAR });
+    assert.deepEqual(P.importJson(st, single).imported, 1);
+    const bad = JSON.stringify({ app: "logo-grid-generator", version: 1, presets: [
+      { name: "OK", settings: CIRCULAR },
+      { name: "Nope", settings: { ...CIRCULAR, rings: -2 } },
+      { name: "", settings: CIRCULAR },
+    ]});
+    const res = P.importJson(st, bad);
+    assert.equal(res.imported, 1);
+    assert.equal(res.skipped.length, 2);
+  });
+  it("import rejects garbage", () => {
+    assert.equal(P.importJson(memStore(), '{"nope":true}').ok, false);
+    assert.throws(() => P.importJson(memStore(), "{invalid"), SyntaxError);
+  });
 });

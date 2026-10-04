@@ -42,7 +42,7 @@
       combineDiv: parseInt($("combineDiv").value, 10),
       selectionMode: selMode,
       lock: $("lockGrid").checked,
-      showCenter: $("showCenter").checked,
+      preview: $("preview").checked,      showCenter: $("showCenter").checked,
       showBounds: $("showBounds").checked
     };
   }
@@ -80,7 +80,8 @@
         offsetX: s.offsetX, offsetY: s.offsetY,
         selectionMode: s.selectionMode, lock: s.lock,
         showCenter: s.showCenter, showBounds: s.showBounds,
-        combine: s.combine, combineDiv: s.combineDiv
+        combine: s.combine, combineDiv: s.combineDiv,
+        preview: s.preview
       }));
     } catch (e) { /* private mode etc. — persistence is best-effort */ }
   }
@@ -99,6 +100,7 @@
       if (s.showBounds !== undefined) $("showBounds").checked = !!s.showBounds;
       if (s.combine !== undefined) $("combine").checked = !!s.combine;
       if (s.combineDiv !== undefined) $("combineDiv").value = s.combineDiv;
+      if (s.preview !== undefined) $("preview").checked = !!s.preview;
     } catch (e) { /* corrupt -> keep defaults */ }
   }
   function setBusy(b) {
@@ -108,6 +110,45 @@
   }
   function presetStore() {
     return window.LGG_Presets.localStorageStore();
+  }
+
+  // Live preview: debounced auto-regenerate (README §27: 100–200 ms).
+  var previewTimer = null;
+  function schedulePreview() {
+    if (!$("preview").checked) return;
+    if (previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(function () {
+      previewTimer = null;
+      autoPreview();
+    }, 180);
+  }
+  async function autoPreview() {
+    if (previewTimer) return; // superseded
+    var s = readSettings();
+    if (window.LGG_Geometry.validateGrid(s).length) return; // invalid → stay silent
+    setBusy(true);
+    try {
+      var cleared = await window.LGG_Host.call("lgg_clearGrid", []);
+      if (!cleared.ok) return; // no host / no document → stay silent
+      var r = await doGenerate(s);
+      if (!r.ok) return;
+      persistLast(s);
+      setStatus("Preview: " + r.made + " " + r.kind + ".", "ok");
+    } finally { setBusy(false); }
+  }
+  function watchPreview() {
+    var ids = ["gridType", "rings", "spacing", "columns", "rows", "padding", "size",
+      "divisions", "radius", "rotation", "base", "levels", "gwidth", "gheight",
+      "spacingV", "offX", "offY", "stroke", "opacity", "color",
+      "lockGrid", "showCenter", "showBounds", "combine", "combineDiv"];
+    ids.forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener("input", schedulePreview);
+      el.addEventListener("change", schedulePreview);
+    });
+    var radios = document.getElementsByName("selMode");
+    for (var i = 0; i < radios.length; i++) radios[i].addEventListener("change", schedulePreview);
   }
   function updateParamVisibility() {
     var t = $("gridType").value;
@@ -319,10 +360,52 @@
     setStatus("Preset deleted.", "ok");
   }
 
+  function onExport() {
+    try {
+      var json = window.LGG_Presets.exportJson(presetStore());
+      var blob = new Blob([json], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "logo-grid-presets.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      setStatus("Presets exported.", "ok");
+    } catch (e) {
+      setStatus("Export failed.", "error");
+    }
+  }
+
+  function onImportFile(ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var res;
+      try {
+        res = window.LGG_Presets.importJson(presetStore(), String(rd.result));
+      } catch (e) {
+        setStatus("Invalid preset file.", "error");
+        ev.target.value = "";
+        return;
+      }
+      if (!res.ok) {
+        setStatus(res.error, "error");
+      } else {
+        refreshPresetList();
+        setStatus("Imported " + res.imported + " preset(s)" +
+          (res.skipped.length ? " (" + res.skipped.length + " skipped)." : "."), "ok");
+      }
+      ev.target.value = "";
+    };
+    rd.readAsText(f);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     restoreLast();
     updateParamVisibility();
     refreshPresetList();
+    watchPreview();
     $("gridType").addEventListener("change", updateParamVisibility);
     $("btnGenerate").addEventListener("click", onGenerate);
     $("btnRegenerate").addEventListener("click", onRegenerate);
@@ -330,6 +413,8 @@
     $("presetSelect").addEventListener("change", onPresetChange);
     $("btnSavePreset").addEventListener("click", onSavePreset);
     $("btnDeletePreset").addEventListener("click", onDeletePreset);
+    $("btnExport").addEventListener("click", onExport);
+    $("importFile").addEventListener("change", onImportFile);
     if (!window.LGG_Host.available()) {
       setStatus("Dev preview: open via Window > Extensions in Illustrator for live host.", "");
     }

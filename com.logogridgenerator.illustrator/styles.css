@@ -32,3 +32,4 @@ body {
 .lgg-btn-primary { background: #0e6bff; border-color: #0e6bff; color: #fff; }
 .lgg-btn:disabled { opacity: 0.5; cursor: default; }
 .lgg-btn-small { flex: 0 0 auto; padding: 5px 10px; }
+.lgg-file-label { display: inline-block; text-align: center; cursor: pointer; }

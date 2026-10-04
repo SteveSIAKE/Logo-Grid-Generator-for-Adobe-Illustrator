@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="11.0" ExtensionBundleId="com.logogridgenerator.illustrator" ExtensionBundleVersion="0.1.0" ExtensionBundleName="Logo Grid Generator">
+<ExtensionManifest Version="11.0" ExtensionBundleId="com.logogridgenerator.illustrator" ExtensionBundleVersion="0.3.0" ExtensionBundleName="Logo Grid Generator">
   <ExtensionList>
-    <Extension Id="com.logogridgenerator.illustrator.panel" Version="0.1.0"/>
+    <Extension Id="com.logogridgenerator.illustrator.panel" Version="0.3.0"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

@@ -128,6 +128,55 @@ function isGridType(t: unknown): t is GridType {
     );
 }
 
+export interface PresetFileEntry {
+    name: string;
+    settings: GridSettings;
+}
+
+export interface PresetFile {
+    app: string;
+    version: number;
+    presets: PresetFileEntry[];
+}
+
+/** JSON exchange format: { app, version: 1, presets: [{ name, settings }] }. */
+export function exportJson(store: PresetStore): string {
+    const customs = loadCustoms(store);
+    const names = Object.keys(customs).sort();
+    const file: PresetFile = {
+        app: "logo-grid-generator",
+        version: 1,
+        presets: names.map((n) => ({ name: n, settings: clone(customs[n]) })),
+    };
+    return JSON.stringify(file, null, 2);
+}
+
+export interface ImportResult {
+    ok: boolean;
+    error?: string;
+    imported?: number;
+    skipped?: { name: string; error?: string }[];
+}
+
+/** Accepts a multi-preset file or a single-preset { name, version, settings } file. */
+export function importJson(store: PresetStore, text: string): ImportResult {
+    const o = JSON.parse(text) as Partial<PresetFile> & { name?: string; settings?: GridSettings };
+    const list = o && Array.isArray(o.presets)
+        ? o.presets
+        : o && o.settings
+          ? [{ name: o.name as string, settings: o.settings }]
+          : null;
+    if (!Array.isArray(list)) return { ok: false, error: "Invalid preset file." };
+    let imported = 0;
+    const skipped: { name: string; error?: string }[] = [];
+    for (const p of list) {
+        const r = savePreset(store, (p && p.name) as string, (p && p.settings) as GridSettings);
+        if (r.ok) imported++;
+        else skipped.push({ name: (p && p.name) || "?", error: r.error });
+    }
+    return { ok: true, imported, skipped };
+}
+
 export function removePreset(store: PresetStore, name: string): { ok: boolean; error?: string } {
     const n = name.trim();
     if (isBuiltin(n)) return { ok: false, error: "Built-in presets cannot be deleted." };

@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="lgg-header">
-    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.1.0</span></h1>
+    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.3.0</span></h1>
   </header>
 
   <main class="lgg-main">
@@ -144,6 +144,12 @@
         <input id="presetName" class="lgg-input" type="text" placeholder="My preset name" maxlength="60" />
         <button id="btnSavePreset" type="button" class="lgg-btn lgg-btn-small">SAVE</button>
       </div>
+      <div class="lgg-row">
+        <button id="btnExport" type="button" class="lgg-btn lgg-btn-small">EXPORT</button>
+        <label class="lgg-btn lgg-btn-small lgg-file-label">IMPORT
+          <input id="importFile" type="file" accept=".json,application/json" hidden />
+        </label>
+      </div>
     </section>
 
     <section class="lgg-section">
@@ -151,6 +157,7 @@
       <label class="lgg-radio"><input id="lockGrid" type="checkbox" /> Lock generated layer</label>
       <label class="lgg-radio"><input id="showCenter" type="checkbox" /> Include center marker</label>
       <label class="lgg-radio"><input id="showBounds" type="checkbox" /> Include bounding box</label>
+      <label class="lgg-radio"><input id="preview" type="checkbox" /> Live preview (auto-regenerate)</label>
       <div class="lgg-row" id="row-combine">
         <label class="lgg-radio"><input id="combine" type="checkbox" /> + radial overlay</label>
         <input id="combineDiv" class="lgg-input" type="number" value="12" min="1" max="360" step="1" title="Overlay divisions" />
