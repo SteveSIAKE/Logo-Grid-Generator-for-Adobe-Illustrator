@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Logo Grid Generator</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="lgg-header">
+    <h1>LOGO GRID GENERATOR <span class="lgg-version">v0.1.0</span></h1>
+  </header>
+
+  <main class="lgg-main">
+    <section class="lgg-section">
+      <label class="lgg-label" for="gridType">GRID TYPE</label>
+      <select id="gridType" class="lgg-input">
+        <option value="circular" selected>Circular Grid</option>
+        <option value="modular" disabled>Modular (v0.2)</option>
+        <option value="square" disabled>Square (v0.2)</option>
+        <option value="radial" disabled>Radial (v0.2)</option>
+        <option value="golden" disabled>Golden Ratio (v0.3)</option>
+        <option value="custom" disabled>Custom (v0.3)</option>
+      </select>
+    </section>
+
+    <section class="lgg-section">
+      <h2>PARAMETERS</h2>
+      <div class="lgg-row">
+        <label for="rings">Rings</label>
+        <input id="rings" class="lgg-input" type="number" value="6" min="1" max="100" step="1" />
+      </div>
+      <div class="lgg-row">
+        <label for="spacing">Spacing</label>
+        <input id="spacing" class="lgg-input" type="number" value="20" min="0" step="any" />
+        <span class="lgg-unit">px</span>
+      </div>
+      <div class="lgg-row">
+        <label for="stroke">Stroke</label>
+        <input id="stroke" class="lgg-input" type="number" value="1" min="0" step="0.25" />
+        <span class="lgg-unit">pt</span>
+      </div>
+      <div class="lgg-row">
+        <label for="opacity">Opacity</label>
+        <input id="opacity" class="lgg-input" type="number" value="40" min="0" max="100" step="1" />
+        <span class="lgg-unit">%</span>
+      </div>
+      <div class="lgg-row">
+        <label for="color">Color</label>
+        <input id="color" class="lgg-input lgg-color" type="color" value="#000000" />
+      </div>
+    </section>
+
+    <section class="lgg-section">
+      <h2>MULTIPLE SELECTION</h2>
+      <label class="lgg-radio"><input type="radio" name="selMode" value="global" checked /> One grid for entire selection</label>
+      <label class="lgg-radio"><input type="radio" name="selMode" value="perObject" /> One grid per object</label>
+    </section>
+
+    <div id="status" class="lgg-status" role="status" aria-live="polite"></div>
+
+    <section class="lgg-actions">
+      <button id="btnGenerate" type="button" class="lgg-btn lgg-btn-primary">GENERATE GRID</button>
+      <button id="btnClear" type="button" class="lgg-btn">CLEAR GRID</button>
+    </section>
+  </main>
+
+  <!-- Official Adobe CSInterface.js must replace js/CSInterface.js from the CEP SDK. -->
+  <script src="./js/CSInterface.js"></script>
+  <script src="./js/geometry.js"></script>
+  <script src="./js/host-comm.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>

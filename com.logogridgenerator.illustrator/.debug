@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionList>
+  <!-- Attach Chrome DevTools to the panel webview during development. -->
+  <Extension Id="com.logogridgenerator.illustrator.panel">
+    <HostList>
+      <Host Name="ILST" Port="9222"/>
+    </HostList>
+  </Extension>
+</ExtensionList>

@@ -1,0 +1,13 @@
+{
+  "name": "logo-grid-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Logo Grid Generator for Adobe Illustrator (CEP panel, Phase 1+2)",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node --test tests/"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
