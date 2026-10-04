@@ -213,14 +213,19 @@ function lgg_gridInfo() {
         if (layer === null || layer === undefined) {
             return lgg_json({ ok: true, exists: false });
         }
-        return lgg_json({ ok: true, exists: true, locked: !!layer.locked, visible: layer.visible !== false });
+        var guides = false;
+        try {
+            if (layer.groupItems.length > 0 && layer.groupItems[0].pathItems.length > 0) {
+                guides = !!layer.groupItems[0].pathItems[0].guides;
+            }
+        } catch (e2) { /* keep default */ }
+        return lgg_json({ ok: true, exists: true, locked: !!layer.locked, visible: layer.visible !== false, guides: guides });
     } catch (e) {
         return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
     }
 }
 
-function lgg_setGridVisible(visible) {
-    try {
+function lgg_setGridVisible(visible) {    try {
         if (app.documents.length === 0) {
             return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
         }
@@ -231,6 +236,31 @@ function lgg_setGridVisible(visible) {
         }
         layer.visible = !!visible;
         return lgg_json({ ok: true, exists: true, visible: !!visible });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+// Artwork <-> Guide conversion for everything the extension generated.
+// guidesOn=true turns grid paths into Illustrator guides, false reverts to artwork.
+function lgg_setGuideMode(guidesOn) {
+    try {
+        if (app.documents.length === 0) {
+            return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
+        }
+        var layer = null;
+        try { layer = app.activeDocument.layers.getByName(LGG_LAYER_NAME); } catch (e) { layer = null; }
+        if (layer === null || layer === undefined) {
+            return lgg_json({ ok: true, exists: false, count: 0 });
+        }
+        var count = 0;
+        for (var gi = 0; gi < layer.groupItems.length; gi++) {
+            var gr = layer.groupItems[gi];
+            for (var pi = 0; pi < gr.pathItems.length; pi++) {
+                try { gr.pathItems[pi].guides = !!guidesOn; count++; } catch (e2) { /* skip */ }
+            }
+        }
+        return lgg_json({ ok: true, exists: true, guides: !!guidesOn, count: count });
     } catch (e) {
         return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
     }

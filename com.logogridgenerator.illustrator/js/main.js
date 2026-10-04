@@ -109,6 +109,7 @@
     $("btnRegenerate").disabled = b;
     $("btnClear").disabled = b;
     $("btnVisibility").disabled = b;
+    $("btnGuides").disabled = b;
   }
   function presetStore() {
     return window.LGG_Presets.localStorageStore();
@@ -319,23 +320,43 @@
   }
 
   var gridVisible = true;
+  var gridGuides = false;
 
   async function refreshVisibility() {
     var btn = $("btnVisibility");
+    var gbtn = $("btnGuides");
     try {
       var info = await window.LGG_Host.call("lgg_gridInfo", []);
       if (!info.ok || !info.exists) {
         btn.textContent = "HIDE GRID";
         btn.disabled = true;
+        gbtn.textContent = "MAKE GUIDES";
+        gbtn.disabled = true;
         return;
       }
       gridVisible = info.visible !== false;
       btn.textContent = gridVisible ? "HIDE GRID" : "SHOW GRID";
       btn.disabled = false;
+      gridGuides = !!info.guides;
+      gbtn.textContent = gridGuides ? "MAKE ARTWORK" : "MAKE GUIDES";
+      gbtn.disabled = false;
     } catch (e) {
       btn.textContent = "HIDE GRID";
       btn.disabled = true;
+      gbtn.textContent = "MAKE GUIDES";
+      gbtn.disabled = true;
     }
+  }
+
+  async function onToggleGuides() {
+    setStatus("");
+    setBusy(true);
+    try {
+      var res = await window.LGG_Host.call("lgg_setGuideMode", [!gridGuides]);
+      if (!res.ok) { setStatus(res.error === "NO_HOST" ? res.detail : "Illustrator error: " + (res.detail || res.error), "error"); return; }
+      await refreshVisibility();
+      setStatus(gridGuides ? "Grid converted to guides (" + res.count + ")." : "Guides converted back to artwork (" + res.count + ").", "ok");
+    } finally { setBusy(false); }
   }
 
   async function onToggleVisibility() {
@@ -452,6 +473,7 @@
     $("btnExport").addEventListener("click", onExport);
     $("importFile").addEventListener("change", onImportFile);
     $("btnVisibility").addEventListener("click", onToggleVisibility);
+    $("btnGuides").addEventListener("click", onToggleGuides);
     refreshVisibility();
     if (!window.LGG_Host.available()) {
       setStatus("Dev preview: open via Window > Extensions in Illustrator for live host.", "");
