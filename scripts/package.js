@@ -8,10 +8,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const src = path.join(root, "com.logogridgenerator.illustrator");
+const src = path.join(root, "com.logopresentationstudio.illustrator");
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const outDir = path.join(root, "dist");
-const out = path.join(outDir, `logo-grid-generator-${pkg.version}.zip`);
+const out = path.join(outDir, `logo-presentation-studio-${pkg.version}.zip`);
 
 if (!fs.existsSync(src)) {
   console.error("Missing extension folder: " + src);
@@ -26,6 +26,6 @@ if (process.platform === "win32") {
     { stdio: "inherit" }
   );
 } else {
-  execSync(`zip -qr "${out}" "com.logogridgenerator.illustrator"`, { cwd: root, stdio: "inherit" });
+  execSync(`zip -qr "${out}" "com.logopresentationstudio.illustrator"`, { cwd: root, stdio: "inherit" });
 }
 console.log("Wrote " + out + " (unsigned — dev only, see docs/INSTALL.md)");

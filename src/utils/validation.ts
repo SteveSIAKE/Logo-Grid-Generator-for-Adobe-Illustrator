@@ -6,7 +6,7 @@ export interface GridStyle {
     color: string; // #RRGGBB
     dash?: string; // space-separated lengths, e.g. "4 2"; empty = solid
 }
-
+ 
 export type GridType = "circular" | "modular" | "square" | "radial" | "golden" | "custom";
 
 export interface CircularSettings extends GridStyle {

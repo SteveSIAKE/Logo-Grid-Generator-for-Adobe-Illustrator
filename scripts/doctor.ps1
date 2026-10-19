@@ -1,13 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Diagnostic d'installation - Logo Grid Generator (CEP / Illustrator).
+  Diagnostic d'installation - Logo Presentation Studio (CEP / Illustrator).
   A executer sur la machine avec Illustrator : clic droit > Executer avec PowerShell.
   Copier-coller TOUTE la sortie dans le rapport de bug.
 #>
 $ErrorActionPreference = "Continue"
 
-Write-Output "===== LGG DOCTOR v0.3.2 ====="
+Write-Output "===== LPS DOCTOR v0.1.0 ====="
 Write-Output ""
 
 Write-Output "--- 1. Illustrator detecte ---"
@@ -47,8 +47,8 @@ foreach ($r in $roots) {
   Write-Output "dossier : $r"
   if (-not (Test-Path -LiteralPath $r)) { Write-Output "  (dossier absent)"; continue }
   $hits = Get-ChildItem -LiteralPath $r -Directory -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like "*logo*" -or $_.Name -like "*grid*" -or $_.Name -like "*Logo*" }
-  if (-not $hits) { Write-Output "  (aucune copie LGG)"; continue }
+    Where-Object { $_.Name -like "*logo*" -or $_.Name -like "*studio*" -or $_.Name -like "*grid*" }
+  if (-not $hits) { Write-Output "  (aucune copie LPS)"; continue }
   foreach ($h in $hits) {
     Write-Output ("  copie : " + $h.FullName + "  [" + $h.LastWriteTime + "]")
     $copies += $h.FullName

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="12.0" ExtensionBundleId="com.logogridgenerator.illustrator" ExtensionBundleVersion="1.0.0" ExtensionBundleName="Logo Grid Generator">
+<ExtensionManifest Version="12.0" ExtensionBundleId="com.logopresentationstudio.illustrator" ExtensionBundleVersion="0.1.0" ExtensionBundleName="Logo Presentation Studio">
   <ExtensionList>
-    <Extension Id="com.logogridgenerator.illustrator.panel" Version="1.0.0"/>
+    <Extension Id="com.logopresentationstudio.illustrator.panel" Version="0.1.0"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -17,7 +17,7 @@
     </RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
-    <Extension Id="com.logogridgenerator.illustrator.panel">
+    <Extension Id="com.logopresentationstudio.illustrator.panel">
       <DispatchInfo>
         <Resources>
           <MainPath>./index.html</MainPath>
@@ -25,7 +25,7 @@
         </Resources>
         <UI>
           <Type>Panel</Type>
-          <Menu>Logo Grid Generator</Menu>
+          <Menu>Logo Presentation Studio</Menu>
           <Geometry>
             <Size>
               <Height>720</Height>

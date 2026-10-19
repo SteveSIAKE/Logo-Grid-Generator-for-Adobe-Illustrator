@@ -3,7 +3,7 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 
-const G = require("../com.logogridgenerator.illustrator/js/geometry.js");
+const G = require("../com.logopresentationstudio.illustrator/js/geometry.js");
 
 describe("bounds", () => {
   it("center = left + W/2, top - H/2", () => {

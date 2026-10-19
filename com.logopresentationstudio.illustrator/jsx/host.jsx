@@ -1,4 +1,4 @@
-// Logo Grid Generator — ExtendScript host layer (Illustrator).
+// Logo Presentation Studio — ExtendScript host layer (Illustrator).
 // Keep thin: only direct Illustrator DOM access. All math lives in the panel.
 // Every function returns a JSON string: { ok: bool, ... }.
 

@@ -1,4 +1,4 @@
-# Installation — Logo Grid Generator (CEP, Illustrator 2024+)
+# Installation — Logo Presentation Studio (CEP, Illustrator 2024+)
 
 > Techno figée : **CEP + ExtendScript**. UXP n'est pas public pour Illustrator
 > en 2026 (interne Adobe uniquement). Le jour où UXP s'ouvrira, seul le module
@@ -6,12 +6,19 @@
 >
 > Testé sur : **Illustrator 2026 (v30.7) + CEP 12**, Windows.
 >
-> ## 0. État de la v1.0
+> ## 0. État du produit — MVP v0.1
 >
-> Fonctionnel : 6 grilles (Circular, Modular, Square, Radial, Golden Ratio,
-> Custom), combinaison radiale, presets + import/export JSON, preview live,
-> persistance, unités (px/pt/mm/cm/in), lock / hide / guides, Clear/Regenerate,
-> undo en une étape, 43+ tests Node + `tsc` strict.
+> Logo Presentation Studio est la refonte de Logo Grid Generator : il devient
+> un assistant de présentation de marque intégré à Illustrator. Le périmètre
+> MVP couvre le Module Construction Grid (6 grilles : Circular, Modular,
+> Square, Radial, Golden Ratio, Custom), la combinaison radiale, les presets +
+> import/export JSON, la preview live, la persistance, les unités
+> (px/pt/mm/cm/in), lock / hide / guides, Clear/Regenerate, l'undo en une
+> étape, 43 tests Node + `tsc` strict.
+>
+> Les modules Logo Showcase, Color Palette, Typography System, Clear Space et
+> le Brand Board Generator (mise en page automatique) sont en cours de
+> développement pour le MVP.
 >
 > Limitations connues :
 >
@@ -20,10 +27,12 @@
 > - `js/CSInterface.js` est un shim de dev : remplacer par le fichier officiel
 >   du SDK CEP avant signature.
 > - Bounds = boîte englobante alignée aux axes (`geometricBounds`) : un logo
->   pivoté donne le AABB, pas la boîte orientée (choix documenté, §74 du spec).
+>   pivoté donne le AABB, pas la boîte orientée (choix documenté).
 > - `MAKE ARTWORK` après `MAKE GUIDES` dépend du support `guides=false`
 >   d'Illustrator : si la reconversion échoue, régénérer la grille.
 > - macOS non testé (chemins fournis par analogie).
+> - L'ancienne extension `com.logogridgenerator.illustrator` doit être
+>   désinstallée avant d'installer celle-ci (§1.4).
 
 ## 1. Installation développeur (non signée)
 
@@ -51,7 +60,7 @@ defaults write com.adobe.CSXS.11 PlayerDebugMode 1
 
 ### 1.2 Copier l'extension
 
-Copier le dossier `com.logogridgenerator.illustrator` dans :
+Copier le dossier `com.logopresentationstudio.illustrator` dans :
 
 | OS      | Dossier                                                        |
 | ------- | -------------------------------------------------------------- |
@@ -68,8 +77,14 @@ Variante par utilisateur (sans droits admin) :
 ### 1.3 Lancer
 
 1. Redémarrer Illustrator (2024+, v28+).
-2. `Window > Extensions > Logo Grid Generator`.
+2. `Window > Extensions > Logo Presentation Studio`.
 3. DevTools : ouvrir Chrome sur le port du fichier `.debug` (9222 par défaut).
+
+### 1.4 Désinstaller l'ancienne extension (Logo Grid Generator)
+
+L'ancienne extension `com.logogridgenerator.illustrator` est distincte de
+celle-ci (autre ID, autre dossier). Illustrator fermé, supprimer son dossier
+des emplacements CEP (§1.2) puis vider le cache CEP (§3.1) avant de rouvrir.
 
 ## 2. Distribution (signée)
 
@@ -96,7 +111,7 @@ ZXPSignCmd -sign <dossier> <archive.zxp> <cert.p12> <motdepasse> -tsa http://tim
 
 ### 3.1 Panneau vide (l'onglet s'affiche, contenu gris)
 
-Le panneau v0.3.1+ affiche une **bannière rouge** en cas d'erreur JS.
+Le panneau v0.1.0+ affiche une **bannière rouge** en cas d'erreur JS.
 S'il reste totalement vide, le HTML ne charge pas du tout. Vérifier
 dans l'ordre :
 
@@ -110,7 +125,7 @@ dans l'ordre :
 3. **Cache CEP** — Illustrator fermé, supprimer le cache du moteur web :
    - Windows : `%TEMP%\CEPHtmlEngineCache` (et tout dossier `CSXS*` du temp)
    - macOS : `~/Library/Caches/Adobe/CEP/`
-   puis rouvrir Illustrator. Les `?v=0.3.1` sur les scripts forcent
+   puis rouvrir Illustrator. Les `?v=0.1.0` sur les scripts forcent
    déjà le rechargement à chaque montée de version.
 4. **Debug distant** — avec Illustrator ouvert, ouvrir
    `http://localhost:9222` dans Chrome (port déclaré dans `.debug`) :
@@ -122,6 +137,6 @@ dans l'ordre :
 ```bash
 npm install
 npm run check   # tsc --noEmit (moteur géométrique + presets)
-npm test        # 30+ tests Node (géométrie, validation, presets, import/export)
+npm test        # 43 tests Node (géométrie, validation, presets, import/export)
 npm run package # archive dev non signée dans dist/
 ```

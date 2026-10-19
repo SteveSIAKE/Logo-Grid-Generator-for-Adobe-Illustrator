@@ -3,8 +3,8 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 
-require("../com.logogridgenerator.illustrator/js/geometry.js");
-const P = require("../com.logogridgenerator.illustrator/js/presets.js");
+require("../com.logopresentationstudio.illustrator/js/geometry.js");
+const P = require("../com.logopresentationstudio.illustrator/js/presets.js");
 
 function memStore(initial) {
   let v = initial === undefined ? null : initial;
@@ -80,7 +80,7 @@ describe("presets", () => {
     P.save(a, "Beta", RADIAL);
     const json = P.exportJson(a);
     const file = JSON.parse(json);
-    assert.equal(file.app, "logo-grid-generator");
+    assert.equal(file.app, "logo-presentation-studio");
     assert.equal(file.version, 1);
     assert.equal(file.presets.length, 2);
     const b = memStore();
@@ -92,7 +92,7 @@ describe("presets", () => {
     const st = memStore();
     const single = JSON.stringify({ name: "Solo", version: 1, settings: CIRCULAR });
     assert.deepEqual(P.importJson(st, single).imported, 1);
-    const bad = JSON.stringify({ app: "logo-grid-generator", version: 1, presets: [
+    const bad = JSON.stringify({ app: "logo-presentation-studio", version: 1, presets: [
       { name: "OK", settings: CIRCULAR },
       { name: "Nope", settings: { ...CIRCULAR, rings: -2 } },
       { name: "", settings: CIRCULAR },

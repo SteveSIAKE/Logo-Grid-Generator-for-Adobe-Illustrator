@@ -129,7 +129,7 @@
     var customs = loadCustoms(store);
     var names = Object.keys(customs).sort();
     return JSON.stringify({
-      app: "logo-grid-generator",
+      app: "logo-presentation-studio",
       version: 1,
       presets: names.map(function (n) { return { name: n, settings: clone(customs[n]) }; })
     }, null, 2);

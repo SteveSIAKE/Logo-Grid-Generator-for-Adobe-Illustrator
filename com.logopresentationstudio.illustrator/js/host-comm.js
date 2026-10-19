@@ -2,7 +2,7 @@
  * All evalScript calls go through Host.call(fn, argsArray). */
 (function (global) {
   "use strict";
-  var PLUGIN_ID = "com.logogridgenerator.grid";
+  var PLUGIN_ID = "com.logopresentationstudio.grid";
 
   function escapeArg(v) {
     if (typeof v === "string") return '"' + v.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';

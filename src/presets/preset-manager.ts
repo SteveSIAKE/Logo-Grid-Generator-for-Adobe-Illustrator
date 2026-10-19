@@ -146,7 +146,7 @@ export function exportJson(store: PresetStore): string {
     const customs = loadCustoms(store);
     const names = Object.keys(customs).sort();
     const file: PresetFile = {
-        app: "logo-grid-generator",
+        app: "logo-presentation-studio",
         version: 1,
         presets: names.map((n) => ({ name: n, settings: clone(customs[n]) })),
     };
