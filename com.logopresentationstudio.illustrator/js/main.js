@@ -190,8 +190,9 @@
   }
 
   function toBounds(b) {
-    return (b.centerX === undefined)
-      ? window.LGG_Geometry.makeBounds(b.left, b.top, b.width, b.height) : b;
+    if (b && b.bounds) return b.bounds; // host now returns { bounds: {...} }
+    if (b && b.centerX !== undefined) return b;
+    return window.LGG_Geometry.makeBounds(b.left, b.top, b.width, b.height);
   }
 
   // Draw the main grid for one target bounds. Returns { ok, made, error, kind }.
@@ -267,7 +268,8 @@
     if (!sel.items || sel.items.length === 0) {
       return { ok: false, error: "Please select a logo or object first." };
     }
-    var targets = (s.selectionMode === "perObject" ? sel.items : [window.LGG_Geometry.globalBounds(sel.items)])
+    var itemBounds = sel.items.map(toBounds);
+    var targets = (s.selectionMode === "perObject" ? itemBounds : [window.LGG_Geometry.globalBounds(itemBounds)])
       .map(toBounds);
     var g = window.LGG_Geometry.convertToPoints(s); // lengths -> Illustrator points
     var style = { stroke: s.stroke, opacity: s.opacity, color: s.color, dash: window.LGG_Geometry.parseDash(s.dash || "").dashes };

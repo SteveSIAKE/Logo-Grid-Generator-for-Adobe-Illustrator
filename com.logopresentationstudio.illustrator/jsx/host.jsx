@@ -34,23 +34,161 @@ function lgg_hasDocument() {
     }
 }
 
+function lgg_typeToKind(typename) {
+    switch (typename) {
+        case "PathItem": return "path";
+        case "CompoundPathItem": return "compoundPath";
+        case "GroupItem": return "group";
+        case "TextFrame": return "text";
+        case "PlacedItem": return "placed";
+        case "RasterItem": return "raster";
+        case "MeshItem": return "mesh";
+        case "SymbolItem": return "symbol";
+        default: return "other";
+    }
+}
+
+function lgg_rgbToHex(r, g, b) {
+    function h(x) { var s = Math.round(x).toString(16); return s.length < 2 ? "0" + s : s; }
+    return "#" + h(r) + h(g) + h(b);
+}
+
+function lgg_spotToRgb(color) {
+    // A spot color has no direct RGB value; approximate through its color model.
+    try {
+        if (color.spot && color.spot.color) {
+            var inner = lgg_readColor(color.spot.color);
+            return (inner && inner.rgb) ? inner.rgb : null;
+        }
+    } catch (e) {}
+    return null;
+}
+
+// Read any Illustrator color into a JSON-safe ColorRef. Unsupported models are
+// reported explicitly (spec 9.2) rather than silently flattened.
+function lgg_readColor(color) {
+    try {
+        if (color === null || color === undefined) return null;
+        var t = color.typename;
+        if (t === "RGBColor") {
+            return {
+                kind: "rgb",
+                hex: lgg_rgbToHex(color.red, color.green, color.blue),
+                rgb: [Math.round(color.red), Math.round(color.green), Math.round(color.blue)]
+            };
+        }
+        if (t === "CMYKColor") {
+            return { kind: "cmyk", cmyk: [color.cyan, color.magenta, color.yellow, color.black] };
+        }
+        if (t === "GrayColor") {
+            return { kind: "gray", rgb: [color.gray, color.gray, color.gray] };
+        }
+        if (t === "SpotColor") {
+            var spotName = null;
+            try { spotName = color.spot.name; } catch (e) {}
+            return { kind: "spot", name: spotName, rgb: lgg_spotToRgb(color) };
+        }
+        if (t === "GradientColor") {
+            var stops = [];
+            try {
+                var gs = color.gradient.gradientStops;
+                for (var i = 0; i < gs.length && i < 8; i++) {
+                    stops.push(lgg_readColor(gs[i].color));
+                }
+            } catch (e) {}
+            return { kind: "gradient", gradientStops: stops };
+        }
+        if (t === "NoColor") return { kind: "none" };
+        if (t === "PatternColor") return { kind: "pattern" };
+        return { kind: "unknown" };
+    } catch (e) {
+        return { kind: "unknown" };
+    }
+}
+
 function lgg_getSelectionInfo() {
     try {
         if (app.documents.length === 0) {
             return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
         }
-        var sel = app.activeDocument.selection;
+        var doc = app.activeDocument;
+        var sel = doc.selection;
         var items = [];
         for (var i = 0; i < sel.length; i++) {
             try {
-                var b = sel[i].geometricBounds; // [left, top, right, bottom]
-                items.push({
-                    left: b[0], top: b[1],
-                    width: b[2] - b[0], height: b[1] - b[3]
-                });
+                var it = sel[i];
+                var b = it.geometricBounds; // [left, top, right, bottom]
+                var rec = {
+                    objectType: lgg_typeToKind(it.typename),
+                    name: (it.name !== undefined && it.name !== null && it.name !== "") ? it.name : "",
+                    layerName: (it.layer && it.layer.name) ? it.layer.name : "",
+                    bounds: {
+                        left: b[0], top: b[1], right: b[2], bottom: b[3],
+                        width: b[2] - b[0], height: b[1] - b[3],
+                        centerX: (b[0] + b[2]) / 2, centerY: (b[1] + b[3]) / 2
+                    },
+                    locked: !!it.locked,
+                    hidden: (it.hidden === true),
+                    isText: (it.typename === "TextFrame")
+                };
+                try { rec.filled = !!it.filled; } catch (eF) { /* non-path item */ }
+                try { rec.stroked = !!it.stroked; } catch (eS) { /* non-path item */ }
+                if (rec.isText) {
+                    try {
+                        var ca = it.textRange.characterAttributes;
+                        rec.textFamily = (ca.textFont && ca.textFont.name) ? ca.textFont.name : "";
+                        rec.textStyle = "";
+                        try { rec.textStyle = (ca.textFont && ca.textFont.fontStyleName) ? ca.textFont.fontStyleName : ""; } catch (eSt) {}
+                        rec.textSize = (ca.size !== undefined && ca.size !== null) ? ca.size : 0;
+                    } catch (eT) { /* unreadable text attributes */ }
+                }
+                try { rec.fill = lgg_readColor(it.fillColor); } catch (eC) { rec.fill = null; }
+                try { rec.stroke = lgg_readColor(it.strokeColor); } catch (eC2) { rec.stroke = null; }
+                items.push(rec);
             } catch (e2) { /* skip unreadable selection entries */ }
         }
         return lgg_json({ ok: true, count: items.length, items: items });
+    } catch (e) {
+        return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
+    }
+}
+
+// Scan the document: per-layer summary + raw item list (capped for perf, spec 22).
+function lps_scanDocument() {
+    try {
+        if (app.documents.length === 0) {
+            return lgg_json({ ok: false, error: "NO_DOCUMENT", detail: "No Illustrator document is open." });
+        }
+        var doc = app.activeDocument;
+        var MAX_ITEMS = 2000;
+        var layers = [];
+        var total = 0;
+        for (var li = 0; li < doc.layers.length; li++) {
+            var layer = doc.layers[li];
+            var pageItems = layer.pageItems;
+            var layerItems = [];
+            for (var ii = 0; ii < pageItems.length && total < MAX_ITEMS; ii++) {
+                var it = pageItems[ii];
+                total++;
+                try {
+                    var b = it.geometricBounds;
+                    layerItems.push({
+                        type: lgg_typeToKind(it.typename),
+                        name: (it.name !== undefined && it.name !== null) ? it.name : "",
+                        width: b[2] - b[0],
+                        height: b[1] - b[3]
+                    });
+                } catch (e) { /* skip unreadable item */ }
+            }
+            layers.push({
+                name: layer.name,
+                locked: !!layer.locked,
+                hidden: (layer.visible === false),
+                itemCount: pageItems.length,
+                items: layerItems
+            });
+        }
+        return lgg_json({ ok: true, layerCount: layers.length, totalItems: total, layers: layers });
     } catch (e) {
         return lgg_json({ ok: false, error: "HOST_ERROR", detail: String(e) });
     }
