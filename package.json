@@ -5,7 +5,7 @@
   "description": "Logo Presentation Studio for Adobe Illustrator (CEP panel, MVP v0.1)",
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "node --test tests/geometry.test.js tests/presets.test.js tests/analyzer.test.js",
+    "test": "node --test tests/geometry.test.js tests/presets.test.js tests/analyzer.test.js tests/colors.test.js",
     "package": "node scripts/package.js"
   },
   "devDependencies": {
